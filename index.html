@@ -433,6 +433,35 @@
       text-overflow: ellipsis;
     }
 
+    .market-title a {
+      min-width: 0;
+      color: inherit;
+      text-decoration: none;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .market-title a:hover {
+      color: #1d72ff;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .market-icon-img {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      object-fit: cover;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+    }
+
+    .market-state {
+      padding: 24px 16px;
+      color: #6f7c8d;
+      font-size: 13px;
+      text-align: center;
+    }
+
     .market-meta {
       margin-top: 2px;
       color: #566274;
@@ -1278,7 +1307,7 @@
             <h2 class="panel-title store-title">App Store 榜单</h2>
             <span class="platform" style="color: var(--ios)"><i class="dot"></i><span class="market-rank-type">US游戏榜</span><span class="rank-date">2026-06-16</span></span>
           </div>
-          <div class="market-list">
+          <div class="market-list" id="appStoreMarketList">
             <div class="market-row">
               <span class="market-rank">1</span>
               <span class="app-icon" style="background: linear-gradient(135deg, #1d72ff, #0857df)">P+</span>
@@ -1989,6 +2018,7 @@
             document.querySelectorAll(".market-rank-type").forEach((label) => {
               label.textContent = button.dataset.rankType;
             });
+            renderAppStoreChart(button.dataset.rankType);
           }
         });
       });
@@ -2017,6 +2047,100 @@
       }
     });
     syncRankDate();
+
+    const appStoreMarketList = document.querySelector("#appStoreMarketList");
+    const appStoreChartEndpoints = {
+      "US游戏榜": "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/genre=6014/json",
+      "US总榜": "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/json"
+    };
+
+    const setAppStoreState = (message) => {
+      appStoreMarketList.innerHTML = `<div class="market-state">${message}</div>`;
+    };
+
+    const parseAppStoreEntry = (entry, index) => {
+      const images = entry["im:image"] || [];
+      const icon = images.length ? images[images.length - 1].label : "";
+
+      return {
+        rank: index + 1,
+        name: entry["im:name"]?.label || "Unknown App",
+        developer: entry["im:artist"]?.label || "Unknown Developer",
+        url: entry.link?.attributes?.href || "#",
+        icon
+      };
+    };
+
+    const renderAppStoreRows = (apps) => {
+      appStoreMarketList.innerHTML = "";
+
+      apps.slice(0, 100).forEach((app) => {
+        const row = document.createElement("div");
+        row.className = "market-row";
+
+        const rank = document.createElement("span");
+        rank.className = "market-rank";
+        rank.textContent = app.rank;
+
+        const icon = document.createElement("img");
+        icon.className = "market-icon-img";
+        icon.src = app.icon;
+        icon.alt = `${app.name} icon`;
+        icon.loading = "lazy";
+
+        const main = document.createElement("div");
+        main.className = "market-main";
+
+        const title = document.createElement("div");
+        title.className = "market-title";
+
+        const link = document.createElement("a");
+        link.href = app.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = app.name;
+        title.appendChild(link);
+
+        const meta = document.createElement("div");
+        meta.className = "market-meta";
+        meta.textContent = app.developer;
+
+        main.append(title, meta);
+
+        const change = document.createElement("span");
+        change.className = "market-change flat";
+        change.textContent = "-";
+
+        row.append(rank, icon, main, change);
+        appStoreMarketList.appendChild(row);
+      });
+    };
+
+    async function renderAppStoreChart(rankType = "US游戏榜") {
+      const endpoint = appStoreChartEndpoints[rankType] || appStoreChartEndpoints["US游戏榜"];
+      setAppStoreState("正在加载 App Store 榜单...");
+
+      try {
+        const response = await fetch(endpoint);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        const entries = Array.isArray(data.feed?.entry) ? data.feed.entry : [];
+
+        if (entries.length === 0) {
+          setAppStoreState("暂无 App Store 榜单数据");
+          return;
+        }
+
+        renderAppStoreRows(entries.map(parseAppStoreEntry));
+      } catch (error) {
+        setAppStoreState("App Store 榜单加载失败，请稍后重试");
+      }
+    }
+
+    renderAppStoreChart("US游戏榜");
 
     const hourlyFilter = document.querySelector(".hourly-filter");
     const dayFilter = document.querySelector("[data-grain='day']");
