@@ -1,0 +1,2306 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>商店速览系统</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f5ef;
+      --panel: #ffffff;
+      --panel-soft: #f0f3f6;
+      --panel-light: #ffffff;
+      --text: #172033;
+      --muted: #6c7584;
+      --line: rgba(24, 35, 52, 0.1);
+      --brand: #ff7e9e;
+      --brand-2: #74d6a0;
+      --warning: #ffc56e;
+      --ios: #85b7ff;
+      --gp: #91e8b4;
+      --shadow: 0 18px 42px rgba(91, 99, 113, 0.12);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "PingFang SC", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 1280px;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(186, 216, 188, 0.36), transparent 28%),
+        radial-gradient(circle at 88% 16%, rgba(255, 226, 196, 0.48), transparent 30%),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      width: 100%;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 16px clamp(28px, 3vw, 56px) 44px;
+    }
+
+    .hero {
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 34px;
+      letter-spacing: 0.02em;
+    }
+
+    .toolbar,
+    .timebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .tab-group,
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-note {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .rank-date-field {
+      position: relative;
+      height: 38px;
+      min-width: 176px;
+    }
+
+    .rank-date-control {
+      height: 38px;
+      width: 100%;
+      border: 1px solid rgba(255, 126, 158, 0.26);
+      border-radius: 12px;
+      padding: 0 12px 0 14px;
+      color: #2c3445;
+      background:
+        linear-gradient(135deg, rgba(255, 126, 158, 0.12), rgba(255, 255, 255, 0.9)),
+        #fff;
+      font-size: 12.8px;
+      font-weight: 400;
+      outline: none;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(255, 126, 158, 0.12);
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .rank-date-field:focus-within .rank-date-control {
+      border-color: rgba(255, 126, 158, 0.62);
+      box-shadow: 0 0 0 3px rgba(255, 126, 158, 0.14);
+    }
+
+    .rank-date-picker {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .rank-date-icon {
+      color: #6f7786;
+      width: 15px;
+      height: 15px;
+      flex: 0 0 auto;
+    }
+
+    .rank-date {
+      color: #8b95a5;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .tab,
+    .filter,
+    .select {
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.76);
+      border-radius: 12px;
+      padding: 9px 14px;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    .tab:hover,
+    .filter:hover,
+    .select:hover {
+      border-color: rgba(24, 35, 52, 0.24);
+      transform: translateY(-1px);
+    }
+
+    .tab.active,
+    .filter.active {
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--brand), #ffb4c8);
+      color: #171018;
+      font-weight: 700;
+      box-shadow: 0 12px 32px rgba(255, 126, 158, 0.24);
+    }
+
+    .select {
+      min-width: 150px;
+      appearance: none;
+      background:
+        linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+        linear-gradient(135deg, var(--muted) 50%, transparent 50%),
+        rgba(255, 255, 255, 0.76);
+      background-position:
+        calc(100% - 18px) 52%,
+        calc(100% - 13px) 52%,
+        0 0;
+      background-size: 5px 5px, 5px 5px, 100% 100%;
+      background-repeat: no-repeat;
+      padding-right: 36px;
+    }
+
+    .dashboard {
+      display: grid;
+      gap: 22px;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel.light {
+      color: #1a2433;
+      background: var(--panel-light);
+      border-color: rgba(0, 0, 0, 0.08);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 56px;
+      padding: 16px 18px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .light .panel-header {
+      border-bottom-color: rgba(26, 36, 51, 0.12);
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .store-title {
+      color: #1d72ff;
+    }
+
+    .play-title {
+      color: #07834b;
+    }
+
+    .title-store {
+      color: #1d72ff;
+    }
+
+    .title-play {
+      color: #07834b;
+    }
+
+    .platform {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .rank-list {
+      display: grid;
+      gap: 12px;
+      padding: 16px 18px 20px;
+      min-height: 315px;
+    }
+
+    .rank-item {
+      display: grid;
+      grid-template-columns: 30px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 14px;
+      background: rgba(24, 35, 52, 0.055);
+    }
+
+    .light .rank-item {
+      background: rgba(26, 36, 51, 0.055);
+    }
+
+    .rank-num {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: rgba(24, 35, 52, 0.08);
+      color: var(--warning);
+      font-weight: 800;
+    }
+
+    .light .rank-num {
+      background: rgba(26, 36, 51, 0.08);
+      color: #d68400;
+    }
+
+    .app-name {
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .meta {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .light .meta {
+      color: #6f7c8d;
+    }
+
+    .change {
+      border-radius: 999px;
+      padding: 5px 8px;
+      color: #172018;
+      background: var(--brand-2);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .change.down {
+      color: #2b1417;
+      background: #ff9aaa;
+    }
+
+    .market-panel .panel-header {
+      min-height: 46px;
+      padding: 12px 14px 8px;
+    }
+
+    .market-list {
+      height: 560px;
+      overflow-y: auto;
+      background: #fff;
+      scrollbar-width: thin;
+      scrollbar-color: #cfd5df #f8f9fb;
+    }
+
+    .market-list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .market-list::-webkit-scrollbar-track {
+      background: #f8f9fb;
+    }
+
+    .market-list::-webkit-scrollbar-thumb {
+      background: #cfd5df;
+      border-radius: 999px;
+    }
+
+    .market-row {
+      display: grid;
+      grid-template-columns: 24px 38px minmax(0, 1fr) 42px;
+      align-items: center;
+      gap: 8px;
+      min-height: 56px;
+      padding: 8px 14px 8px 10px;
+      border-bottom: 1px solid #edf0f3;
+      color: #0c1424;
+    }
+
+    .market-rank {
+      font-weight: 900;
+      font-style: italic;
+      text-align: center;
+    }
+
+    .market-row:nth-child(1) .market-rank {
+      color: #ff7b7b;
+      font-size: 20px;
+    }
+
+    .market-row:nth-child(2) .market-rank {
+      color: #ffae55;
+      font-size: 19px;
+    }
+
+    .market-row:nth-child(3) .market-rank {
+      color: #ffd75e;
+      font-size: 18px;
+    }
+
+    .app-icon {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+    }
+
+    .app-icon.light-icon {
+      color: #121926;
+      background: #f4f6f8;
+      border: 1px solid #e5e8ed;
+    }
+
+    .market-main {
+      min-width: 0;
+    }
+
+    .market-title {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .market-title span:first-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .market-meta {
+      margin-top: 2px;
+      color: #566274;
+      font-size: 11px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 16px;
+      border-radius: 4px;
+      padding: 0 4px;
+      font-size: 11px;
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+
+    .badge.ad {
+      color: #1b6dff;
+      background: #e9f1ff;
+    }
+
+    .badge.pay {
+      color: #ff8a00;
+      background: #fff0dc;
+    }
+
+    .market-change {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 3px;
+      color: #ff4e65;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .market-change.down {
+      color: #0bb050;
+    }
+
+    .market-change.flat {
+      color: #a3acba;
+    }
+
+    .owned-list {
+      height: 560px;
+    }
+
+    .owned-head,
+    .owned-row {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr) 52px 52px;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .owned-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      min-height: 36px;
+      padding: 8px 14px 8px 14px;
+      background: #f7f8fa;
+      border-bottom: 1px solid #e7ebf0;
+      color: #657082;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .owned-head span:nth-child(n + 3) {
+      text-align: center;
+    }
+
+    .owned-row {
+      min-height: 56px;
+      padding: 8px 14px;
+      border-bottom: 1px solid #edf0f3;
+      color: #0c1424;
+    }
+
+    .owned-row .market-main + .rank-value {
+      display: none;
+    }
+
+    .rank-value {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      height: 28px;
+      margin: 0 auto;
+      border-radius: 999px;
+      color: #1e314b;
+      background: #eef2f6;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .rank-value.hot {
+      color: #b56800;
+      background: #fff0d4;
+    }
+
+    .rank-value.good {
+      color: #087843;
+      background: #dcf6e8;
+    }
+
+    .rank-value.empty {
+      color: #a3acba;
+      background: #f4f6f8;
+    }
+
+    .trend-panel {
+      padding: 20px;
+    }
+
+    .chart-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 16px;
+    }
+
+    .chart-main-controls,
+    .chart-side-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chart-title {
+      margin: 0;
+      font-size: 18px;
+      white-space: nowrap;
+    }
+
+    .product-combobox {
+      position: relative;
+      width: 210px;
+    }
+
+    .product-search {
+      width: 190px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0 34px 0 12px;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+    }
+
+    .product-combobox .product-search {
+      width: 100%;
+    }
+
+    .product-search:focus {
+      border-color: rgba(29, 114, 255, 0.46);
+      box-shadow: 0 0 0 3px rgba(29, 114, 255, 0.1);
+    }
+
+    .combo-arrow {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      color: #233049;
+      pointer-events: none;
+      transform: translateY(-50%);
+      font-size: 12px;
+    }
+
+    .product-menu {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 10;
+      display: none;
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 6px;
+      border: 1px solid rgba(24, 35, 52, 0.12);
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 16px 36px rgba(91, 99, 113, 0.18);
+    }
+
+    .product-combobox.is-open .product-menu {
+      display: block;
+    }
+
+    .product-option {
+      display: block;
+      width: 100%;
+      border: 0;
+      border-radius: 9px;
+      padding: 9px 10px;
+      color: #172033;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .product-option:hover,
+    .product-option.is-active {
+      background: #f1f5fb;
+      color: #1d72ff;
+      font-weight: 800;
+    }
+
+    .product-empty {
+      padding: 10px;
+      color: #8a94a4;
+      font-size: 12px;
+    }
+
+    .rank-radio {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 34px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: #4f5b6d;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .rank-radio input {
+      accent-color: var(--brand);
+    }
+
+    .timebar.in-chart {
+      margin: 0;
+      justify-content: flex-end;
+    }
+
+    .timebar.in-chart .filter {
+      padding: 7px 12px;
+      font-size: 12px;
+    }
+
+    .grain-group {
+      padding-right: 10px;
+      margin-right: 2px;
+      border-right: 1px solid var(--line);
+    }
+
+    .grain-filter {
+      border-color: rgba(29, 114, 255, 0.16);
+      color: #1d5fb8;
+      background: #eef5ff;
+    }
+
+    .grain-filter.active {
+      border-color: transparent;
+      color: #fff;
+      background: linear-gradient(135deg, #3f8cff, #7bb4ff);
+      box-shadow: 0 10px 24px rgba(63, 140, 255, 0.2);
+    }
+
+    .filter.is-hidden {
+      display: none;
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chart {
+      height: 280px;
+      position: relative;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid #e8edf3;
+      overflow: hidden;
+    }
+
+    .line-chart {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .axis-label {
+      fill: #8a94a4;
+      font-size: 11px;
+    }
+
+    .grid-line {
+      stroke: #e8edf3;
+      stroke-width: 1;
+    }
+
+    .weekend-band {
+      fill: rgba(255, 197, 110, 0.15);
+    }
+
+    .ios-line {
+      fill: none;
+      stroke: #ff6f87;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .gp-line {
+      fill: none;
+      stroke: #be36e8;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .chart-point {
+      fill: #fff;
+      stroke-width: 3;
+    }
+
+    .chart-pin {
+      fill: #ff6f87;
+    }
+
+    .chart-pin.gp {
+      fill: #be36e8;
+    }
+
+    .chart-pin-text {
+      fill: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .hover-line {
+      stroke: rgba(29, 114, 255, 0.35);
+      stroke-width: 1;
+      stroke-dasharray: 4 4;
+      pointer-events: none;
+    }
+
+    .hover-dot {
+      fill: #fff;
+      stroke-width: 3;
+      pointer-events: none;
+    }
+
+    .trend-tooltip {
+      position: absolute;
+      min-width: 138px;
+      padding: 10px 12px;
+      border: 1px solid rgba(24, 35, 52, 0.1);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 16px 36px rgba(91, 99, 113, 0.18);
+      color: #172033;
+      font-size: 12px;
+      line-height: 1.55;
+      pointer-events: none;
+      transform: translate(-50%, calc(-100% - 12px));
+      opacity: 0;
+      transition: opacity 0.12s ease;
+      z-index: 3;
+    }
+
+    .trend-tooltip.is-visible {
+      opacity: 1;
+    }
+
+    .trend-tooltip strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .trend-tooltip span {
+      display: block;
+      color: #627086;
+    }
+
+    .bar {
+      position: absolute;
+      bottom: 0;
+      width: 34px;
+      border-radius: 12px 12px 0 0;
+      background: linear-gradient(180deg, var(--brand), rgba(255, 126, 158, 0.58));
+    }
+
+    .bar.gp {
+      background: linear-gradient(180deg, var(--brand-2), rgba(116, 214, 160, 0.58));
+      transform: translateX(38px);
+    }
+
+    .x-labels {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .product-section {
+      display: block;
+    }
+
+    .rating-overview {
+      padding: 18px;
+      background:
+        linear-gradient(135deg, rgba(29, 114, 255, 0.07), transparent 34%),
+        linear-gradient(135deg, transparent 56%, rgba(116, 214, 160, 0.1)),
+        #fff;
+    }
+
+    .rating-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .rating-head h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .rating-note {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .rating-scroll {
+      max-height: 336px;
+      overflow: auto;
+      border: 1px solid #e6ebf1;
+      border-radius: 18px;
+      background: #fff;
+      scrollbar-width: thin;
+      scrollbar-color: #cfd5df #f8f9fb;
+    }
+
+    .rating-scroll::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .rating-scroll::-webkit-scrollbar-track {
+      background: #f8f9fb;
+    }
+
+    .rating-scroll::-webkit-scrollbar-thumb {
+      background: #cfd5df;
+      border-radius: 999px;
+    }
+
+    .rating-grid {
+      min-width: 1180px;
+      display: grid;
+      grid-template-columns: 210px repeat(2, minmax(470px, 1fr));
+    }
+
+    .rating-cell {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 12px;
+      border-right: 1px solid #e8edf3;
+      border-bottom: 1px solid #e8edf3;
+      color: #1d283a;
+      background: #fff;
+      font-size: 13px;
+    }
+
+    .rating-cell.sticky-left {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      justify-content: flex-start;
+      background: #fbfcfe;
+      box-shadow: 1px 0 0 #e8edf3;
+    }
+
+    .rating-cell.corner {
+      top: 0;
+      z-index: 6;
+      background: #f3f6fa;
+      font-weight: 900;
+    }
+
+    .rating-period {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      min-height: 46px;
+      background: linear-gradient(135deg, #edf4ff, #f7fbf6);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .rating-platform {
+      min-height: 38px;
+      background: #f7f9fc;
+      color: #536174;
+      font-weight: 900;
+    }
+
+    .rating-metrics {
+      position: sticky;
+      top: 46px;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      padding: 0;
+      background: #fff;
+    }
+
+    .rating-cell.sticky-left.rating-platform {
+      top: 46px;
+      z-index: 6;
+      background: #f7f9fc;
+    }
+
+    .rating-metrics span {
+      width: 100%;
+      height: 100%;
+      min-height: 38px;
+      display: grid;
+      place-items: center;
+      border-right: 1px solid #e8edf3;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    .rating-metrics span:last-child {
+      border-right: 0;
+    }
+
+    .rating-metrics span:nth-child(1),
+    .rating-metrics span:nth-child(4) {
+      font-weight: 800;
+    }
+
+    .rating-values {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      padding: 0;
+    }
+
+    .rating-values span {
+      min-height: 48px;
+      display: grid;
+      place-items: center;
+      border-right: 1px solid #f0f3f7;
+    }
+
+    .rating-values span:last-child {
+      border-right: 0;
+    }
+
+    .product-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      font-weight: 900;
+    }
+
+    .product-label small {
+      display: block;
+      margin-top: 2px;
+      color: #7b8798;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .score-chip {
+      min-width: 42px;
+      height: 28px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 999px;
+      color: #25324a;
+      background: #f1f4f8;
+      font-weight: 900;
+    }
+
+    .score-chip.ios {
+      color: #176bd7;
+      background: #eaf2ff;
+    }
+
+    .score-chip.gp {
+      color: #07834b;
+      background: #e4f7ec;
+    }
+
+    .rating-values span.low-score,
+    .score-chip.low-score {
+      color: #e04455;
+      font-weight: 900;
+    }
+
+    .score-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+    }
+
+    .score-table th,
+    .score-table td {
+      border: 1px solid rgba(26, 36, 51, 0.14);
+      padding: 14px 10px;
+      text-align: center;
+    }
+
+    .score-table thead th {
+      background: rgba(26, 36, 51, 0.08);
+      font-weight: 800;
+    }
+
+    .score-table .product-name {
+      background: rgba(26, 36, 51, 0.08);
+      letter-spacing: 0.04em;
+    }
+
+    .score {
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .score.ios {
+      color: #176bd7;
+    }
+
+    .score.gp {
+      color: #07834b;
+    }
+
+    .insight-card {
+      height: 100%;
+      padding: 20px;
+      color: var(--text);
+      background:
+        linear-gradient(135deg, rgba(116, 214, 160, 0.14), transparent 45%),
+        var(--panel);
+    }
+
+    .insight-card h3 {
+      margin: 0 0 14px;
+    }
+
+    .insight-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: #4e5a6b;
+      line-height: 1.8;
+    }
+
+    .event-overview {
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    .event-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .event-head h2 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .event-head .muted-platform {
+      color: #8b95a5;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .event-note {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .event-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
+
+    .event-card {
+      overflow: hidden;
+      border-radius: 16px;
+      background: #eef8ed;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .event-image {
+      aspect-ratio: 16 / 9;
+      position: relative;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.45), transparent 28%),
+        linear-gradient(135deg, #bdddb8, #8fc18e);
+    }
+
+    .event-image::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      border-radius: 12px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent),
+        rgba(255, 255, 255, 0.06);
+    }
+
+    .event-image-label {
+      position: absolute;
+      inset: 18px;
+      display: grid;
+      place-items: center;
+      color: rgba(20, 48, 28, 0.78);
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+    }
+
+    .event-info {
+      padding: 11px 12px 12px;
+      background: #eef8ed;
+      color: #17331f;
+    }
+
+    .event-info strong,
+    .event-info span {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-info strong {
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .event-info span {
+      margin-top: 3px;
+      color: rgba(23, 51, 31, 0.72);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        min-width: 0;
+      }
+
+      .app {
+        width: 100%;
+        padding: 20px;
+      }
+
+      .hero,
+      .toolbar,
+      .timebar,
+      .product-section {
+        display: block;
+      }
+
+      .filter-group,
+      .tab-group {
+        margin-top: 14px;
+      }
+
+      .overview-grid,
+      .product-section,
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <div>
+        <h1>商店速览系统</h1>
+      </div>
+    </section>
+
+    <section class="toolbar" aria-label="榜单切换">
+      <div class="toolbar-left">
+        <div class="tab-group">
+          <button class="tab active" type="button" data-rank-type="US游戏榜">US游戏榜</button>
+          <button class="tab" type="button" data-rank-type="US总榜">US总榜</button>
+        </div>
+        <div class="rank-date-field">
+          <div class="rank-date-control" aria-hidden="true">
+            <span class="rank-date-value">2026年06月16日</span>
+            <svg class="rank-date-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1.5A2.5 2.5 0 0 1 22 6.5v12A2.5 2.5 0 0 1 19.5 21h-15A2.5 2.5 0 0 1 2 18.5v-12A2.5 2.5 0 0 1 4.5 4H6V3a1 1 0 0 1 1-1Zm12.5 8h-15v8.5a.5.5 0 0 0 .5.5h14a.5.5 0 0 0 .5-.5V10ZM5 6a.5.5 0 0 0-.5.5V8h15V6.5A.5.5 0 0 0 19 6H5Z"/>
+            </svg>
+          </div>
+          <input class="rank-date-picker" type="date" value="2026-06-16" aria-label="选择榜单日期" />
+        </div>
+      </div>
+      <div class="toolbar-note">双端商店榜单和自有产品榜单 均为美国榜单数据，数据小时级更新</div>
+    </section>
+
+    <section class="dashboard">
+      <div class="overview-grid">
+        <article class="panel market-panel">
+          <div class="panel-header">
+            <h2 class="panel-title store-title">App Store 榜单</h2>
+            <span class="platform" style="color: var(--ios)"><i class="dot"></i><span class="market-rank-type">US游戏榜</span><span class="rank-date">2026-06-16</span></span>
+          </div>
+          <div class="market-list">
+            <div class="market-row">
+              <span class="market-rank">1</span>
+              <span class="app-icon" style="background: linear-gradient(135deg, #1d72ff, #0857df)">P+</span>
+              <div class="market-main">
+                <div class="market-title"><span>Paramount+</span><span class="badge ad">Ad</span><span class="badge pay">$</span></div>
+                <div class="market-meta">娱乐 · 1名 CBS Interactive</div>
+              </div>
+              <span class="market-change flat">-</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">2</span>
+              <span class="app-icon" style="background: #111">PC</span>
+              <div class="market-main">
+                <div class="market-title"><span>Peacock TV: Stream TV & Movies</span><span class="badge ad">Ad</span><span class="badge pay">$</span></div>
+                <div class="market-meta">娱乐 · 2名 Peacock TV LLC</div>
+              </div>
+              <span class="market-change">▲ 1</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">3</span>
+              <span class="app-icon light-icon">FOX</span>
+              <div class="market-main">
+                <div class="market-title"><span>FOX One: Live News, Sports, TV</span><span class="badge pay">$</span></div>
+                <div class="market-meta">娱乐 · 3名 Fox Digital Services, LLC</div>
+              </div>
+              <span class="market-change">▲ 1</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">4</span>
+              <span class="app-icon" style="background: #00d38a; color: #08251b">Kalshi</span>
+              <div class="market-main">
+                <div class="market-title"><span>Kalshi: Trade the Cup</span><span class="badge ad">Ad</span></div>
+                <div class="market-meta">财务 · 1名 KalshiEX LLC</div>
+              </div>
+              <span class="market-change down">▼ 2</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">5</span>
+              <span class="app-icon light-icon">GPT</span>
+              <div class="market-main">
+                <div class="market-title"><span>ChatGPT</span><span class="badge ad">Ad</span><span class="badge pay">$</span></div>
+                <div class="market-meta">效率 · 1名 OpenAI OpCo, LLC</div>
+              </div>
+              <span class="market-change flat">-</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">6</span>
+              <span class="app-icon" style="background: #173bda">FWC</span>
+              <div class="market-main">
+                <div class="market-title"><span>FWC2026 Mobile Tickets</span></div>
+                <div class="market-meta">体育 · 1名 FIFA</div>
+              </div>
+              <span class="market-change">▲ 8</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">7</span>
+              <span class="app-icon" style="background: linear-gradient(135deg, #30165f, #d23893)">NG</span>
+              <div class="market-main">
+                <div class="market-title"><span>Netflix Game Controller</span></div>
+                <div class="market-meta">娱乐 · 4名 Netflix, Inc.</div>
+              </div>
+              <span class="market-change flat">-</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">8</span>
+              <span class="app-icon" style="background: #050505">FIFA</span>
+              <div class="market-main">
+                <div class="market-title"><span>FIFA World Cup 2026™</span></div>
+                <div class="market-meta">体育 · 2名 FIFA</div>
+              </div>
+              <span class="market-change flat">-</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">9</span>
+              <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BO</span>
+              <div class="market-main">
+                <div class="market-title"><span>Block Out! - Color Sort Puzzle</span><span class="badge pay">$</span></div>
+                <div class="market-meta">益智解谜 · 1名 Grand Games A.Ş.</div>
+              </div>
+              <span class="market-change flat">-</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">10</span>
+              <span class="app-icon" style="background: #2765f7">PM</span>
+              <div class="market-main">
+                <div class="market-title"><span>Polymarket</span><span class="badge ad">Ad</span></div>
+                <div class="market-meta">财务 · 2名 Polymarket</div>
+              </div>
+              <span class="market-change down">▼ 4</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">11</span>
+              <span class="app-icon" style="background: linear-gradient(135deg, #ffe1a5, #45c2d5)">LI</span>
+              <div class="market-main">
+                <div class="market-title"><span>Love Island USA</span></div>
+                <div class="market-meta">娱乐 · 5名 ITV America Inc.</div>
+              </div>
+              <span class="market-change">▲ 7</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">12</span>
+              <span class="app-icon" style="background: #ff5b36">YT</span>
+              <div class="market-main">
+                <div class="market-title"><span>YouTube</span></div>
+                <div class="market-meta">摄影与录像 · 1名 Google LLC</div>
+              </div>
+              <span class="market-change down">▼ 1</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel market-panel">
+          <div class="panel-header">
+            <h2 class="panel-title play-title">Google Play 榜单</h2>
+            <span class="platform" style="color: var(--gp)"><i class="dot"></i><span class="market-rank-type">US游戏榜</span><span class="rank-date">2026-06-16</span></span>
+          </div>
+          <div class="market-list">
+            <div class="market-row">
+              <span class="market-rank">1</span>
+              <span class="app-icon" style="background: #111">Chat</span>
+              <div class="market-main">
+                <div class="market-title"><span>ChatGPT</span><span class="badge ad">Ad</span></div>
+                <div class="market-meta">效率 · 1名 OpenAI</div>
+              </div>
+              <span class="market-change">▲ 3</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">2</span>
+              <span class="app-icon" style="background: #ff2d55">TT</span>
+              <div class="market-main">
+                <div class="market-title"><span>TikTok</span></div>
+                <div class="market-meta">娱乐 · 1名 TikTok Pte. Ltd.</div>
+              </div>
+              <span class="market-change flat">-</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">3</span>
+              <span class="app-icon" style="background: #2765f7">PM</span>
+              <div class="market-main">
+                <div class="market-title"><span>Polymarket</span><span class="badge ad">Ad</span></div>
+                <div class="market-meta">财务 · 1名 Polymarket</div>
+              </div>
+              <span class="market-change">▲ 4</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">4</span>
+              <span class="app-icon" style="background: #00d38a; color: #08251b">Kalshi</span>
+              <div class="market-main">
+                <div class="market-title"><span>Kalshi: Trade the Cup</span><span class="badge ad">Ad</span></div>
+                <div class="market-meta">财务 · 2名 KalshiEX LLC</div>
+              </div>
+              <span class="market-change down">▼ 1</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">5</span>
+              <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BO</span>
+              <div class="market-main">
+                <div class="market-title"><span>Block Out! - Color Sort Puzzle</span><span class="badge pay">$</span></div>
+                <div class="market-meta">益智解谜 · 1名 Grand Games A.Ş.</div>
+              </div>
+              <span class="market-change">▲ 6</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">6</span>
+              <span class="app-icon" style="background: #1d72ff">P+</span>
+              <div class="market-main">
+                <div class="market-title"><span>Paramount+</span><span class="badge ad">Ad</span></div>
+                <div class="market-meta">娱乐 · 2名 CBS Interactive</div>
+              </div>
+              <span class="market-change down">▼ 2</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">7</span>
+              <span class="app-icon" style="background: #0bb050">SP</span>
+              <div class="market-main">
+                <div class="market-title"><span>Spotify: Music and Podcasts</span></div>
+                <div class="market-meta">音乐与音频 · 1名 Spotify AB</div>
+              </div>
+              <span class="market-change flat">-</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">8</span>
+              <span class="app-icon" style="background: #173bda">FWC</span>
+              <div class="market-main">
+                <div class="market-title"><span>FWC2026 Mobile Tickets</span></div>
+                <div class="market-meta">体育 · 1名 FIFA</div>
+              </div>
+              <span class="market-change">▲ 5</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">9</span>
+              <span class="app-icon light-icon">FOX</span>
+              <div class="market-main">
+                <div class="market-title"><span>FOX One: Live News, Sports, TV</span></div>
+                <div class="market-meta">娱乐 · 4名 Fox Digital Services</div>
+              </div>
+              <span class="market-change down">▼ 3</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">10</span>
+              <span class="app-icon" style="background: linear-gradient(135deg, #30165f, #d23893)">NG</span>
+              <div class="market-main">
+                <div class="market-title"><span>Netflix Game Controller</span></div>
+                <div class="market-meta">娱乐 · 5名 Netflix, Inc.</div>
+              </div>
+              <span class="market-change flat">-</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">11</span>
+              <span class="app-icon" style="background: #34a853">GM</span>
+              <div class="market-main">
+                <div class="market-title"><span>Google Maps</span></div>
+                <div class="market-meta">旅游与本地 · 1名 Google LLC</div>
+              </div>
+              <span class="market-change">▲ 2</span>
+            </div>
+            <div class="market-row">
+              <span class="market-rank">12</span>
+              <span class="app-icon" style="background: #00b8ff">SC</span>
+              <div class="market-main">
+                <div class="market-title"><span>Snapchat</span></div>
+                <div class="market-meta">社交 · 1名 Snap Inc</div>
+              </div>
+              <span class="market-change down">▼ 5</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel market-panel light">
+          <div class="panel-header">
+            <h2 class="panel-title">自有产品排名 · <span class="title-store">App Store</span></h2>
+            <span class="rank-date">2026-06-16</span>
+          </div>
+          <div class="market-list owned-list">
+            <div class="owned-head">
+              <span></span>
+              <span>产品</span>
+              <span>US游戏榜</span>
+              <span>US总榜</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BC</span>
+              <div class="market-main">
+                <div class="market-title"><span>Block Crush</span></div>
+                <div class="market-meta">Grand Games · 益智解谜</div>
+              </div>
+              <span class="rank-value good">15</span>
+              <span class="rank-value">50</span>
+              <span class="rank-value">400</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #7b61ff, #31c6ff)">TS</span>
+              <div class="market-main">
+                <div class="market-title"><span>Tile Sort Journey</span></div>
+                <div class="market-meta">Self Studio · 休闲</div>
+              </div>
+              <span class="rank-value hot">2</span>
+              <span class="rank-value good">8</span>
+              <span class="rank-value">33</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #ff5f7e, #ffc15a)">MC</span>
+              <div class="market-main">
+                <div class="market-title"><span>Merge Cafe</span></div>
+                <div class="market-meta">Self Studio · 模拟经营</div>
+              </div>
+              <span class="rank-value">45</span>
+              <span class="rank-value">126</span>
+              <span class="rank-value empty">-</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #19c37d, #087843)">WF</span>
+              <div class="market-main">
+                <div class="market-title"><span>Word Forest</span></div>
+                <div class="market-meta">Self Studio · 文字</div>
+              </div>
+              <span class="rank-value good">18</span>
+              <span class="rank-value">79</span>
+              <span class="rank-value">286</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #151a2d, #5964ff)">BM</span>
+              <div class="market-main">
+                <div class="market-title"><span>Block Master 3D</span></div>
+                <div class="market-meta">Self Studio · 益智解谜</div>
+              </div>
+              <span class="rank-value">63</span>
+              <span class="rank-value">142</span>
+              <span class="rank-value empty">-</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #ff7a00, #ff2d55)">FB</span>
+              <div class="market-main">
+                <div class="market-title"><span>Farm Blast</span></div>
+                <div class="market-meta">Self Studio · 三消</div>
+              </div>
+              <span class="rank-value">74</span>
+              <span class="rank-value">188</span>
+              <span class="rank-value empty">-</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #21c8f6, #637bff)">CC</span>
+              <div class="market-main">
+                <div class="market-title"><span>Color Crush</span></div>
+                <div class="market-meta">Self Studio · 休闲</div>
+              </div>
+              <span class="rank-value good">21</span>
+              <span class="rank-value">67</span>
+              <span class="rank-value">228</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #734bff, #d85cff)">PJ</span>
+              <div class="market-main">
+                <div class="market-title"><span>Puzzle Journey</span></div>
+                <div class="market-meta">Self Studio · 益智解谜</div>
+              </div>
+              <span class="rank-value">92</span>
+              <span class="rank-value empty">-</span>
+              <span class="rank-value empty">-</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #00b894, #55efc4)">GS</span>
+              <div class="market-main">
+                <div class="market-title"><span>Garden Sort</span></div>
+                <div class="market-meta">Self Studio · 休闲</div>
+              </div>
+              <span class="rank-value">37</span>
+              <span class="rank-value">104</span>
+              <span class="rank-value empty">-</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #fdcb6e, #e17055)">CQ</span>
+              <div class="market-main">
+                <div class="market-title"><span>Cube Quest</span></div>
+                <div class="market-meta">Self Studio · 益智解谜</div>
+              </div>
+              <span class="rank-value">56</span>
+              <span class="rank-value">133</span>
+              <span class="rank-value empty">-</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #0984e3, #74b9ff)">MA</span>
+              <div class="market-main">
+                <div class="market-title"><span>Maze Arrows</span></div>
+                <div class="market-meta">Self Studio · 益智解谜</div>
+              </div>
+              <span class="rank-value hot">7</span>
+              <span class="rank-value good">31</span>
+              <span class="rank-value">118</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel market-panel light">
+          <div class="panel-header">
+            <h2 class="panel-title">自有产品排名 · <span class="title-play">Google Play</span></h2>
+            <span class="rank-date">2026-06-16</span>
+          </div>
+          <div class="market-list owned-list">
+            <div class="owned-head">
+              <span></span>
+              <span>产品</span>
+              <span>US游戏榜</span>
+              <span>US总榜</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BC</span>
+              <div class="market-main">
+                <div class="market-title"><span>Block Crush</span></div>
+                <div class="market-meta">Grand Games · Puzzle</div>
+              </div>
+              <span class="rank-value hot">9</span>
+              <span class="rank-value good">28</span>
+              <span class="rank-value">155</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #7b61ff, #31c6ff)">TS</span>
+              <div class="market-main">
+                <div class="market-title"><span>Tile Sort Journey</span></div>
+                <div class="market-meta">Self Studio · Casual</div>
+              </div>
+              <span class="rank-value">18</span>
+              <span class="rank-value good">44</span>
+              <span class="rank-value">260</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #ff5f7e, #ffc15a)">MC</span>
+              <div class="market-main">
+                <div class="market-title"><span>Merge Cafe</span></div>
+                <div class="market-meta">Self Studio · Simulation</div>
+              </div>
+              <span class="rank-value">55</span>
+              <span class="rank-value">149</span>
+              <span class="rank-value empty">-</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #19c37d, #087843)">WF</span>
+              <div class="market-main">
+                <div class="market-title"><span>Word Forest</span></div>
+                <div class="market-meta">Self Studio · Word</div>
+              </div>
+              <span class="rank-value good">24</span>
+              <span class="rank-value">91</span>
+              <span class="rank-value">332</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #151a2d, #5964ff)">BM</span>
+              <div class="market-main">
+                <div class="market-title"><span>Block Master 3D</span></div>
+                <div class="market-meta">Self Studio · Puzzle</div>
+              </div>
+              <span class="rank-value">40</span>
+              <span class="rank-value">112</span>
+              <span class="rank-value empty">-</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #ff7a00, #ff2d55)">FB</span>
+              <div class="market-main">
+                <div class="market-title"><span>Farm Blast</span></div>
+                <div class="market-meta">Self Studio · Match 3</div>
+              </div>
+              <span class="rank-value">62</span>
+              <span class="rank-value">177</span>
+              <span class="rank-value empty">-</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #21c8f6, #637bff)">CC</span>
+              <div class="market-main">
+                <div class="market-title"><span>Color Crush</span></div>
+                <div class="market-meta">Self Studio · Casual</div>
+              </div>
+              <span class="rank-value">31</span>
+              <span class="rank-value">84</span>
+              <span class="rank-value">295</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #734bff, #d85cff)">PJ</span>
+              <div class="market-main">
+                <div class="market-title"><span>Puzzle Journey</span></div>
+                <div class="market-meta">Self Studio · Puzzle</div>
+              </div>
+              <span class="rank-value">83</span>
+              <span class="rank-value empty">-</span>
+              <span class="rank-value empty">-</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #00b894, #55efc4)">GS</span>
+              <div class="market-main">
+                <div class="market-title"><span>Garden Sort</span></div>
+                <div class="market-meta">Self Studio · Casual</div>
+              </div>
+              <span class="rank-value good">16</span>
+              <span class="rank-value">58</span>
+              <span class="rank-value">210</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #fdcb6e, #e17055)">CQ</span>
+              <div class="market-main">
+                <div class="market-title"><span>Cube Quest</span></div>
+                <div class="market-meta">Self Studio · Puzzle</div>
+              </div>
+              <span class="rank-value">48</span>
+              <span class="rank-value">127</span>
+              <span class="rank-value empty">-</span>
+            </div>
+            <div class="owned-row">
+              <span class="app-icon" style="background: linear-gradient(135deg, #0984e3, #74b9ff)">MA</span>
+              <div class="market-main">
+                <div class="market-title"><span>Maze Arrows</span></div>
+                <div class="market-meta">Self Studio · Puzzle</div>
+              </div>
+              <span class="rank-value hot">5</span>
+              <span class="rank-value good">19</span>
+              <span class="rank-value">96</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <article class="panel trend-panel">
+        <div class="chart-head">
+          <div class="chart-main-controls">
+            <h2 class="chart-title">榜单排名趋势</h2>
+            <div class="product-combobox">
+              <input class="product-search" value="Block Crush" aria-label="搜索自有产品" autocomplete="off" />
+              <span class="combo-arrow">▼</span>
+              <div class="product-menu" role="listbox" aria-label="自有产品列表"></div>
+            </div>
+            <label class="rank-radio">
+              <input type="radio" name="trend-rank-source" value="ios" checked />
+              iOS排名
+            </label>
+            <label class="rank-radio">
+              <input type="radio" name="trend-rank-source" value="gp" />
+              GP排名
+            </label>
+          </div>
+          <div class="chart-side-controls">
+            <section class="timebar in-chart" aria-label="趋势时间范围">
+              <div class="tab-group grain-group" aria-label="趋势显示粒度">
+                <button class="filter grain-filter hourly-filter" type="button" data-grain="hour">分小时</button>
+                <button class="filter grain-filter active" type="button" data-grain="day">分天</button>
+              </div>
+              <div class="tab-group range-group" aria-label="趋势时间范围">
+                <button class="filter active" type="button" data-range="month">近一月</button>
+                <button class="filter" type="button" data-range="quarter">近三月</button>
+                <button class="filter" type="button" data-range="half">近半年</button>
+                <button class="filter" type="button" data-range="year">近一年</button>
+              </div>
+            </section>
+          </div>
+        </div>
+        <div class="chart" aria-label="榜单排名趋势曲线图">
+          <svg class="line-chart" id="trendChart" role="img" aria-label="榜单排名趋势"></svg>
+          <div class="trend-tooltip" id="trendTooltip"></div>
+        </div>
+      </article>
+
+      <section class="product-section">
+        <article class="panel rating-overview">
+          <div class="rating-head">
+            <h2>评分概览</h2>
+            <span class="rating-note">默认展示 10 个产品，滚动时两个周期表格同步查看</span>
+          </div>
+          <div class="rating-scroll" aria-label="评分概览表格">
+            <div class="rating-grid">
+              <div class="rating-cell sticky-left corner">产品</div>
+              <div class="rating-cell rating-period">6.11-6.17</div>
+              <div class="rating-cell rating-period">6.3-6.10</div>
+
+              <div class="rating-cell sticky-left rating-platform"></div>
+              <div class="rating-cell rating-metrics">
+                <span>iOS评分</span>
+                <span>新增均分</span>
+                <span>新增数量</span>
+                <span>GP评分</span>
+                <span>新增均分</span>
+                <span>新增数量</span>
+              </div>
+              <div class="rating-cell rating-metrics">
+                <span>iOS评分</span>
+                <span>新增均分</span>
+                <span>新增数量</span>
+                <span>GP评分</span>
+                <span>新增均分</span>
+                <span>新增数量</span>
+              </div>
+
+              <div class="rating-cell sticky-left">
+                <div class="product-label"><span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BC</span><span>Block Crush<small>益智解谜</small></span></div>
+              </div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.7</span><span>4.8</span><span>1,284</span><span class="score-chip gp">4.5</span><span>4.6</span><span>2,041</span></div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.6</span><span>4.7</span><span>1,102</span><span class="score-chip gp">4.4</span><span>4.5</span><span>1,875</span></div>
+
+              <div class="rating-cell sticky-left">
+                <div class="product-label"><span class="app-icon" style="background: linear-gradient(135deg, #7b61ff, #31c6ff)">TS</span><span>Tile Sort Journey<small>休闲</small></span></div>
+              </div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.8</span><span>4.9</span><span>963</span><span class="score-chip gp">4.6</span><span>4.7</span><span>1,304</span></div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.8</span><span>4.8</span><span>905</span><span class="score-chip gp">4.5</span><span>4.6</span><span>1,166</span></div>
+
+              <div class="rating-cell sticky-left">
+                <div class="product-label"><span class="app-icon" style="background: linear-gradient(135deg, #ff5f7e, #ffc15a)">MC</span><span>Merge Cafe<small>模拟经营</small></span></div>
+              </div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.5</span><span>4.6</span><span>428</span><span class="score-chip gp">4.3</span><span>4.4</span><span>782</span></div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.4</span><span>4.5</span><span>391</span><span class="score-chip gp">4.3</span><span>4.3</span><span>744</span></div>
+
+              <div class="rating-cell sticky-left">
+                <div class="product-label"><span class="app-icon" style="background: linear-gradient(135deg, #19c37d, #087843)">WF</span><span>Word Forest<small>文字</small></span></div>
+              </div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.6</span><span>4.7</span><span>612</span><span class="score-chip gp">4.4</span><span>4.5</span><span>998</span></div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.6</span><span>4.6</span><span>584</span><span class="score-chip gp">4.4</span><span>4.4</span><span>921</span></div>
+
+              <div class="rating-cell sticky-left">
+                <div class="product-label"><span class="app-icon" style="background: linear-gradient(135deg, #151a2d, #5964ff)">BM</span><span>Block Master 3D<small>益智解谜</small></span></div>
+              </div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.4</span><span>4.5</span><span>305</span><span class="score-chip gp">4.2</span><span>4.3</span><span>654</span></div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.3</span><span>4.4</span><span>288</span><span class="score-chip gp">4.1</span><span>4.2</span><span>590</span></div>
+
+              <div class="rating-cell sticky-left">
+                <div class="product-label"><span class="app-icon" style="background: linear-gradient(135deg, #ff7a00, #ff2d55)">FB</span><span>Farm Blast<small>三消</small></span></div>
+              </div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.7</span><span>4.7</span><span>756</span><span class="score-chip gp">4.5</span><span>4.5</span><span>1,088</span></div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.6</span><span>4.6</span><span>721</span><span class="score-chip gp">4.4</span><span>4.4</span><span>1,011</span></div>
+
+              <div class="rating-cell sticky-left">
+                <div class="product-label"><span class="app-icon" style="background: linear-gradient(135deg, #21c8f6, #637bff)">CC</span><span>Color Crush<small>休闲</small></span></div>
+              </div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.8</span><span>4.9</span><span>812</span><span class="score-chip gp">4.6</span><span>4.7</span><span>1,230</span></div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.7</span><span>4.8</span><span>790</span><span class="score-chip gp">4.6</span><span>4.6</span><span>1,176</span></div>
+
+              <div class="rating-cell sticky-left">
+                <div class="product-label"><span class="app-icon" style="background: linear-gradient(135deg, #734bff, #d85cff)">PJ</span><span>Puzzle Journey<small>益智解谜</small></span></div>
+              </div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.5</span><span>4.6</span><span>344</span><span class="score-chip gp">4.3</span><span>4.4</span><span>627</span></div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.5</span><span>4.5</span><span>332</span><span class="score-chip gp">4.2</span><span>4.3</span><span>603</span></div>
+
+              <div class="rating-cell sticky-left">
+                <div class="product-label"><span class="app-icon" style="background: linear-gradient(135deg, #00b894, #55efc4)">GS</span><span>Garden Sort<small>休闲</small></span></div>
+              </div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.6</span><span>4.7</span><span>518</span><span class="score-chip gp">4.4</span><span>4.5</span><span>844</span></div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.5</span><span>4.6</span><span>499</span><span class="score-chip gp">4.4</span><span>4.4</span><span>806</span></div>
+
+              <div class="rating-cell sticky-left">
+                <div class="product-label"><span class="app-icon" style="background: linear-gradient(135deg, #fdcb6e, #e17055)">CQ</span><span>Cube Quest<small>益智解谜</small></span></div>
+              </div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.3</span><span>4.1</span><span>221</span><span class="score-chip gp">4.1</span><span>4.2</span><span>430</span></div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.4</span><span>4.3</span><span>238</span><span class="score-chip gp">4.2</span><span>4.2</span><span>448</span></div>
+
+              <div class="rating-cell sticky-left">
+                <div class="product-label"><span class="app-icon" style="background: linear-gradient(135deg, #0984e3, #74b9ff)">MA</span><span>Maze Arrows<small>益智解谜</small></span></div>
+              </div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.9</span><span>4.9</span><span>688</span><span class="score-chip gp">4.7</span><span>4.8</span><span>1,036</span></div>
+              <div class="rating-cell rating-values"><span class="score-chip ios">4.8</span><span>4.8</span><span>641</span><span class="score-chip gp">4.6</span><span>4.7</span><span>982</span></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel event-overview" aria-label="活动概览">
+        <div class="event-head">
+          <h2>Event概览 <span class="muted-platform">Google play</span></h2>
+          <span class="event-note">每张卡片代表一张商店活动图</span>
+        </div>
+        <div class="event-grid">
+          <article class="event-card">
+            <div class="event-image"><div class="event-image-label">图片A</div></div>
+            <div class="event-info">
+              <strong>HAPPY DAY</strong>
+              <span>活动时间：6.10-6.20</span>
+            </div>
+          </article>
+          <article class="event-card">
+            <div class="event-image"><div class="event-image-label">图片B</div></div>
+            <div class="event-info">
+              <strong>Summer Puzzle</strong>
+              <span>活动时间：6.12-6.25</span>
+            </div>
+          </article>
+          <article class="event-card">
+            <div class="event-image"><div class="event-image-label">图片C</div></div>
+            <div class="event-info">
+              <strong>Block Challenge</strong>
+              <span>活动时间：6.15-6.30</span>
+            </div>
+          </article>
+          <article class="event-card">
+            <div class="event-image"><div class="event-image-label">图片D</div></div>
+            <div class="event-info">
+              <strong>Weekend Boost</strong>
+              <span>活动时间：6.16-6.18</span>
+            </div>
+          </article>
+          <article class="event-card">
+            <div class="event-image"><div class="event-image-label">图片E</div></div>
+            <div class="event-info">
+              <strong>Color Festival</strong>
+              <span>活动时间：6.18-7.01</span>
+            </div>
+          </article>
+          <article class="event-card">
+            <div class="event-image"><div class="event-image-label">图片F</div></div>
+            <div class="event-info">
+              <strong>Farm Pass</strong>
+              <span>活动时间：6.20-7.05</span>
+            </div>
+          </article>
+          <article class="event-card">
+            <div class="event-image"><div class="event-image-label">图片G</div></div>
+            <div class="event-info">
+              <strong>Maze Sprint</strong>
+              <span>活动时间：6.21-6.28</span>
+            </div>
+          </article>
+          <article class="event-card">
+            <div class="event-image"><div class="event-image-label">图片H</div></div>
+            <div class="event-info">
+              <strong>Daily Reward</strong>
+              <span>活动时间：6.22-7.02</span>
+            </div>
+          </article>
+          <article class="event-card">
+            <div class="event-image"><div class="event-image-label">图片I</div></div>
+            <div class="event-info">
+              <strong>Word Hunt</strong>
+              <span>活动时间：6.24-7.08</span>
+            </div>
+          </article>
+          <article class="event-card">
+            <div class="event-image"><div class="event-image-label">图片J</div></div>
+            <div class="event-info">
+              <strong>Lucky Merge</strong>
+              <span>活动时间：6.25-7.10</span>
+            </div>
+          </article>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const activateWithinGroup = (selector) => {
+      document.querySelectorAll(selector).forEach((button) => {
+        button.addEventListener("click", () => {
+          button.parentElement.querySelectorAll(selector).forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+
+          if (button.dataset.rankType) {
+            document.querySelectorAll(".market-rank-type").forEach((label) => {
+              label.textContent = button.dataset.rankType;
+            });
+          }
+        });
+      });
+    };
+
+    activateWithinGroup(".tab");
+
+    const rankDatePicker = document.querySelector(".rank-date-picker");
+    const rankDateValue = document.querySelector(".rank-date-value");
+    const formatRankDate = (value) => {
+      const [year, month, day] = value.split("-");
+      return `${year}年${month}月${day}日`;
+    };
+    const syncRankDate = () => {
+      rankDateValue.textContent = formatRankDate(rankDatePicker.value);
+      document.querySelectorAll(".rank-date").forEach((label) => {
+        label.textContent = rankDatePicker.value;
+      });
+    };
+
+    rankDatePicker.addEventListener("change", syncRankDate);
+    rankDatePicker.addEventListener("click", (event) => {
+      if (typeof rankDatePicker.showPicker === "function") {
+        event.preventDefault();
+        rankDatePicker.showPicker();
+      }
+    });
+    syncRankDate();
+
+    const hourlyFilter = document.querySelector(".hourly-filter");
+    const dayFilter = document.querySelector("[data-grain='day']");
+
+    document.querySelectorAll(".grain-group .filter").forEach((button) => {
+      button.addEventListener("click", () => {
+        button.parentElement.querySelectorAll(".filter").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+      });
+    });
+
+    document.querySelectorAll(".range-group .filter[data-range]").forEach((button) => {
+      button.addEventListener("click", () => {
+        button.parentElement.querySelectorAll(".filter").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+
+        const isMonth = button.dataset.range === "month";
+        hourlyFilter.classList.toggle("is-hidden", !isMonth);
+
+        if (!isMonth) {
+          hourlyFilter.classList.remove("active");
+          dayFilter.classList.add("active");
+        }
+      });
+    });
+
+    document.querySelectorAll(".rating-values").forEach((row) => {
+      Array.from(row.children).forEach((cell, index) => {
+        const isRatingMetric = [0, 1, 3, 4].includes(index);
+        const value = Number.parseFloat(cell.textContent);
+
+        if (isRatingMetric && value < 4.5) {
+          cell.classList.add("low-score");
+        }
+      });
+    });
+
+    const trendChart = document.querySelector("#trendChart");
+    const trendTooltip = document.querySelector("#trendTooltip");
+    const productCombobox = document.querySelector(".product-combobox");
+    const productSearch = document.querySelector(".product-search");
+    const productMenu = document.querySelector(".product-menu");
+    const trendProductNames = [
+      "Block Crush",
+      "Tile Sort Journey",
+      "Merge Cafe",
+      "Word Forest",
+      "Block Master 3D",
+      "Farm Blast",
+      "Color Crush",
+      "Puzzle Journey",
+      "Garden Sort",
+      "Cube Quest",
+      "Maze Arrows",
+      "Bubble Farm",
+      "Hexa Match",
+      "Number Jam",
+      "Parking Puzzle",
+      "Magic Tiles",
+      "Water Sort Daily",
+      "Jewel Quest"
+    ];
+    const trendDates = [
+      "05月17日", "05月18日", "05月19日", "05月20日", "05月21日", "05月22日",
+      "05月23日", "05月24日", "05月25日", "05月26日", "05月27日", "05月28日",
+      "05月29日", "05月30日", "05月31日", "06月01日", "06月02日", "06月03日",
+      "06月04日", "06月05日", "06月06日", "06月07日", "06月08日", "06月09日",
+      "06月10日", "06月11日", "06月12日", "06月13日", "06月14日", "06月15日"
+    ];
+    const baseTrendData = {
+      ios: [5, 4, 4, 5, 6, 5, 4, 5, 6, 5, 4, 4, 5, 4, 3, 4, 6, 7, 7, 6, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9],
+      gp: [23, 18, 21, 24, 22, 13, 17, 15, 10, 12, 16, 12, 11, 13, 15, 55, 38, 28, 30, 26, 29, 24, 20, 27, 26, 31, 28, 30, 33, 35]
+    };
+
+    const svgEl = (name, attributes = {}) => {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+      return node;
+    };
+
+    const getSelectedTrendSource = () => {
+      return document.querySelector("input[name='trend-rank-source']:checked").value;
+    };
+
+    const getProductOffset = (productName) => {
+      const index = Math.max(0, trendProductNames.indexOf(productName));
+      return index % 7;
+    };
+
+    const getTrendData = (productName) => {
+      const offset = getProductOffset(productName);
+
+      return {
+        ios: baseTrendData.ios.map((rank, index) => {
+          const wave = ((index + offset) % 5) - 2;
+          return Math.max(1, Math.min(60, rank + offset + wave));
+        }),
+        gp: baseTrendData.gp.map((rank, index) => {
+          const wave = ((index * 2 + offset) % 9) - 4;
+          return Math.max(1, Math.min(60, rank + offset * 2 + wave));
+        })
+      };
+    };
+
+    const buildSmoothPath = (points) => {
+      return points.reduce((path, point, index) => {
+        if (index === 0) {
+          return `M ${point.x} ${point.y}`;
+        }
+
+        const previous = points[index - 1];
+        const midX = (previous.x + point.x) / 2;
+        return `${path} Q ${previous.x} ${previous.y} ${midX} ${(previous.y + point.y) / 2} T ${point.x} ${point.y}`;
+      }, "");
+    };
+
+    const renderProductMenu = (keyword = "") => {
+      const normalizedKeyword = keyword.trim().toLowerCase();
+      const products = trendProductNames.filter((name) => name.toLowerCase().includes(normalizedKeyword));
+
+      productMenu.innerHTML = "";
+
+      if (products.length === 0) {
+        productMenu.innerHTML = '<div class="product-empty">没有匹配的产品</div>';
+        return;
+      }
+
+      products.forEach((name) => {
+        const option = document.createElement("button");
+        option.type = "button";
+        option.className = `product-option${name === productSearch.value ? " is-active" : ""}`;
+        option.textContent = name;
+        option.addEventListener("click", () => {
+          productSearch.value = name;
+          productCombobox.classList.remove("is-open");
+          renderProductMenu();
+          drawTrendChart();
+        });
+        productMenu.appendChild(option);
+      });
+    };
+
+    const drawTrendChart = () => {
+      const width = Math.max(900, Math.round(trendChart.clientWidth || trendChart.parentElement.clientWidth || 1080));
+      const height = 280;
+      const padding = { top: 22, right: 18, bottom: 34, left: 38 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const maxRank = 60;
+      const productName = trendProductNames.includes(productSearch.value) ? productSearch.value : "Block Crush";
+      const source = getSelectedTrendSource();
+      const data = getTrendData(productName);
+      const series = data[source];
+      const color = source === "ios" ? "#ff6f87" : "#be36e8";
+
+      trendChart.innerHTML = "";
+      trendChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+      const xForIndex = (index) => padding.left + (index / (trendDates.length - 1)) * plotWidth;
+      const yForRank = (rank) => padding.top + ((rank - 1) / (maxRank - 1)) * plotHeight;
+      const points = series.map((rank, index) => ({ x: xForIndex(index), y: yForRank(rank), rank, date: trendDates[index] }));
+
+      [5, 12, 19, 26].forEach((index) => {
+        const x = xForIndex(index) - plotWidth / (trendDates.length - 1) / 2;
+        trendChart.appendChild(svgEl("rect", {
+          class: "weekend-band",
+          x,
+          y: padding.top,
+          width: plotWidth / (trendDates.length - 1) * 1.8,
+          height: plotHeight
+        }));
+      });
+
+      [1, 10, 20, 30, 40, 50, 60].forEach((rank) => {
+        const y = yForRank(rank);
+        trendChart.appendChild(svgEl("line", { class: "grid-line", x1: padding.left, y1: y, x2: width - padding.right, y2: y }));
+        const text = svgEl("text", { class: "axis-label", x: 12, y: y + 4 });
+        text.textContent = rank;
+        trendChart.appendChild(text);
+      });
+
+      [0, 4, 8, 12, 15, 19, 23, 29].forEach((index) => {
+        const x = xForIndex(index);
+        trendChart.appendChild(svgEl("line", { class: "grid-line", x1: x, y1: padding.top, x2: x, y2: padding.top + plotHeight }));
+        const text = svgEl("text", { class: "axis-label", x: x - 18, y: height - 10 });
+        text.textContent = trendDates[index];
+        trendChart.appendChild(text);
+      });
+
+      trendChart.appendChild(svgEl("path", {
+        class: source === "ios" ? "ios-line" : "gp-line",
+        d: buildSmoothPath(points)
+      }));
+
+      points.forEach((point, index) => {
+        if (index % 4 !== 0 && index !== points.length - 1) return;
+        trendChart.appendChild(svgEl("circle", {
+          class: "chart-point",
+          cx: point.x,
+          cy: point.y,
+          r: 4,
+          style: `stroke: ${color}`
+        }));
+      });
+
+      const bestPoint = points.reduce((best, point) => point.rank < best.rank ? point : best, points[0]);
+      const pinY = Math.max(2, bestPoint.y - 28);
+      trendChart.appendChild(svgEl("path", {
+        class: source === "ios" ? "chart-pin" : "chart-pin gp",
+        d: `M ${bestPoint.x} ${pinY} a15 15 0 1 1 0 30 a15 15 0 1 1 0 -30 M ${bestPoint.x} ${pinY + 30} L ${bestPoint.x - 7} ${pinY + 42} L ${bestPoint.x + 7} ${pinY + 42} Z`
+      }));
+      const pinText = svgEl("text", { class: "chart-pin-text", x: bestPoint.x, y: pinY + 15 });
+      pinText.textContent = bestPoint.rank;
+      trendChart.appendChild(pinText);
+
+      const hoverLine = svgEl("line", {
+        class: "hover-line",
+        x1: points[0].x,
+        y1: padding.top,
+        x2: points[0].x,
+        y2: padding.top + plotHeight,
+        opacity: 0
+      });
+      const hoverDot = svgEl("circle", {
+        class: "hover-dot",
+        cx: points[0].x,
+        cy: points[0].y,
+        r: 5,
+        style: `stroke: ${color}`,
+        opacity: 0
+      });
+      trendChart.appendChild(hoverLine);
+      trendChart.appendChild(hoverDot);
+
+      trendChart.onmousemove = (event) => {
+        const rect = trendChart.getBoundingClientRect();
+        const localX = (event.clientX - rect.left) / rect.width * width;
+        const roughIndex = Math.round((localX - padding.left) / plotWidth * (trendDates.length - 1));
+        const index = Math.max(0, Math.min(trendDates.length - 1, roughIndex));
+        const point = points[index];
+
+        hoverLine.setAttribute("x1", point.x);
+        hoverLine.setAttribute("x2", point.x);
+        hoverLine.setAttribute("opacity", 1);
+        hoverDot.setAttribute("cx", point.x);
+        hoverDot.setAttribute("cy", point.y);
+        hoverDot.setAttribute("opacity", 1);
+
+        trendTooltip.innerHTML = `<strong>${point.date}</strong><span>${productName}</span><span>${source === "ios" ? "iOS" : "GP"} 排名：第 ${point.rank} 名</span>`;
+        trendTooltip.style.left = `${event.clientX - rect.left}px`;
+        trendTooltip.style.top = `${event.clientY - rect.top}px`;
+        trendTooltip.classList.add("is-visible");
+      };
+
+      trendChart.onmouseleave = () => {
+        hoverLine.setAttribute("opacity", 0);
+        hoverDot.setAttribute("opacity", 0);
+        trendTooltip.classList.remove("is-visible");
+      };
+    };
+
+    productSearch.addEventListener("focus", () => {
+      renderProductMenu();
+      productCombobox.classList.add("is-open");
+    });
+    productSearch.addEventListener("input", () => {
+      renderProductMenu(productSearch.value);
+      productCombobox.classList.add("is-open");
+
+      if (trendProductNames.includes(productSearch.value)) {
+        drawTrendChart();
+      }
+    });
+    document.addEventListener("click", (event) => {
+      if (!productCombobox.contains(event.target)) {
+        productCombobox.classList.remove("is-open");
+      }
+    });
+    document.querySelectorAll("input[name='trend-rank-source']").forEach((radio) => {
+      radio.addEventListener("change", drawTrendChart);
+    });
+    window.addEventListener("resize", drawTrendChart);
+    renderProductMenu();
+    drawTrendChart();
+  </script>
+</body>
+</html>
