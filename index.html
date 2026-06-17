@@ -1277,7 +1277,7 @@
   <main class="app">
     <section class="hero">
       <div>
-        <h1>商店速览系统</h1>
+        <h1>商店速览</h1>
       </div>
     </section>
 
@@ -1285,7 +1285,7 @@
       <div class="toolbar-left">
         <div class="tab-group">
           <button class="tab active" type="button" data-rank-type="US游戏榜">US游戏榜</button>
-          <button class="tab" type="button" data-rank-type="US总榜">US总榜</button>
+          <button class="tab" type="button" data-rank-type="US应用榜">US应用榜</button>
         </div>
         <div class="rank-date-field">
           <div class="rank-date-control" aria-hidden="true">
@@ -1546,7 +1546,7 @@
               <span></span>
               <span>产品</span>
               <span>US游戏榜</span>
-              <span>US总榜</span>
+              <span>US应用榜</span>
             </div>
             <div class="owned-row">
               <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BC</span>
@@ -1671,7 +1671,7 @@
               <span></span>
               <span>产品</span>
               <span>US游戏榜</span>
-              <span>US总榜</span>
+              <span>US应用榜</span>
             </div>
             <div class="owned-row">
               <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BC</span>
@@ -2051,7 +2051,7 @@
     const appStoreMarketList = document.querySelector("#appStoreMarketList");
     const appStoreChartEndpoints = {
       "US游戏榜": "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/genre=6014/json",
-      "US总榜": "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/json"
+      "US应用榜": "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/json"
     };
 
     const setAppStoreState = (message) => {

@@ -4,7 +4,7 @@ const CHARTS = [
     url: "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/genre=6014/json"
   },
   {
-    chart_type: "us_overall",
+    chart_type: "us_apps",
     url: "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/json"
   }
 ];
