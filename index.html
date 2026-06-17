@@ -2039,7 +2039,10 @@
       });
     };
 
-    rankDatePicker.addEventListener("change", syncRankDate);
+    rankDatePicker.addEventListener("change", () => {
+      syncRankDate();
+      renderAppStoreChart(document.querySelector(".tab.active")?.dataset.rankType || "US游戏榜");
+    });
     rankDatePicker.addEventListener("click", (event) => {
       if (typeof rankDatePicker.showPicker === "function") {
         event.preventDefault();
@@ -2049,25 +2052,22 @@
     syncRankDate();
 
     const appStoreMarketList = document.querySelector("#appStoreMarketList");
-    const appStoreChartEndpoints = {
-      "US游戏榜": "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/genre=6014/json",
-      "US应用榜": "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/json"
+    const appStoreChartTypes = {
+      "US游戏榜": "us_games",
+      "US应用榜": "us_apps"
     };
 
     const setAppStoreState = (message) => {
       appStoreMarketList.innerHTML = `<div class="market-state">${message}</div>`;
     };
 
-    const parseAppStoreEntry = (entry, index) => {
-      const images = entry["im:image"] || [];
-      const icon = images.length ? images[images.length - 1].label : "";
-
+    const parseAppStoreSnapshotRow = (row) => {
       return {
-        rank: index + 1,
-        name: entry["im:name"]?.label || "Unknown App",
-        developer: entry["im:artist"]?.label || "Unknown Developer",
-        url: entry.link?.attributes?.href || "#",
-        icon
+        rank: row.rank,
+        name: row.app_name || "Unknown App",
+        developer: row.developer_name || "Unknown Developer",
+        url: row.app_store_url || "#",
+        icon: row.icon_url || ""
       };
     };
 
@@ -2117,24 +2117,32 @@
     };
 
     async function renderAppStoreChart(rankType = "US游戏榜") {
-      const endpoint = appStoreChartEndpoints[rankType] || appStoreChartEndpoints["US游戏榜"];
+      const chartType = appStoreChartTypes[rankType] || appStoreChartTypes["US游戏榜"];
+      const params = new URLSearchParams({
+        chart_type: chartType,
+        date: rankDatePicker.value
+      });
+
       setAppStoreState("正在加载 App Store 榜单...");
 
       try {
-        const response = await fetch(endpoint);
+        const response = await fetch(`/api/app-store-ranks?${params.toString()}`);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
 
         const data = await response.json();
-        const entries = Array.isArray(data.feed?.entry) ? data.feed.entry : [];
+        if (!data.ok) {
+          throw new Error(data.error || "Unknown API error");
+        }
 
-        if (entries.length === 0) {
-          setAppStoreState("暂无 App Store 榜单数据");
+        const rows = Array.isArray(data.rows) ? data.rows : [];
+        if (rows.length === 0) {
+          setAppStoreState("当前日期暂无 App Store 榜单快照");
           return;
         }
 
-        renderAppStoreRows(entries.map(parseAppStoreEntry));
+        renderAppStoreRows(rows.map(parseAppStoreSnapshotRow));
       } catch (error) {
         setAppStoreState("App Store 榜单加载失败，请稍后重试");
       }
