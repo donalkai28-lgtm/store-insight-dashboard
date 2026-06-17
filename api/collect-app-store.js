@@ -55,12 +55,26 @@ function parseAppStoreEntry(entry, index, chartType, snapshotAt) {
 }
 
 async function fetchChart(chart, snapshotAt) {
-  const response = await fetch(chart.url);
+  let response;
+
+  try {
+    response = await fetch(chart.url);
+  } catch (error) {
+    throw new Error(`Apple RSS fetch failed for ${chart.chart_type}: ${error.message}`);
+  }
+
   if (!response.ok) {
     throw new Error(`Apple RSS ${chart.chart_type} failed: HTTP ${response.status}`);
   }
 
-  const data = await response.json();
+  let data;
+
+  try {
+    data = await response.json();
+  } catch (error) {
+    throw new Error(`Apple RSS JSON parse failed for ${chart.chart_type}: ${error.message}`);
+  }
+
   const entries = Array.isArray(data.feed?.entry) ? data.feed.entry : [];
 
   return entries.map((entry, index) => parseAppStoreEntry(entry, index, chart.chart_type, snapshotAt));
@@ -69,16 +83,23 @@ async function fetchChart(chart, snapshotAt) {
 async function supabaseRequest(path, options = {}) {
   const supabaseUrl = getRequiredEnv("SUPABASE_URL").replace(/\/$/, "");
   const serviceKey = getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const requestUrl = `${supabaseUrl}/rest/v1/${path}`;
 
-  const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`,
-      "Content-Type": "application/json",
-      ...(options.headers || {})
-    }
-  });
+  let response;
+
+  try {
+    response = await fetch(requestUrl, {
+      ...options,
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    });
+  } catch (error) {
+    throw new Error(`Supabase fetch failed for ${path}: ${error.message}`);
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
