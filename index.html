@@ -551,10 +551,6 @@
       color: #0c1424;
     }
 
-    .owned-row .market-main + .rank-value {
-      display: none;
-    }
-
     .rank-value {
       display: inline-flex;
       align-items: center;
@@ -1545,7 +1541,7 @@
             <h2 class="panel-title">自有产品排名 · <span class="title-store">App Store</span></h2>
             <span class="rank-date">2026-06-16</span>
           </div>
-          <div class="market-list owned-list">
+          <div class="market-list owned-list" id="appStoreOwnedList">
             <div class="owned-head">
               <span></span>
               <span>产品</span>
@@ -1670,7 +1666,7 @@
             <h2 class="panel-title">自有产品排名 · <span class="title-play">Google Play</span></h2>
             <span class="rank-date">2026-06-16</span>
           </div>
-          <div class="market-list owned-list">
+          <div class="market-list owned-list" id="googlePlayOwnedList">
             <div class="owned-head">
               <span></span>
               <span>产品</span>
@@ -2065,6 +2061,8 @@
 
     const appStoreMarketList = document.querySelector("#appStoreMarketList");
     const googlePlayMarketList = document.querySelector("#googlePlayMarketList");
+    const appStoreOwnedList = document.querySelector("#appStoreOwnedList");
+    const googlePlayOwnedList = document.querySelector("#googlePlayOwnedList");
     const marketChartTypes = {
       "US游戏榜": "us_games",
       "US应用榜": "us_apps"
@@ -2076,6 +2074,19 @@
 
     const setGooglePlayState = (message) => {
       googlePlayMarketList.innerHTML = `<div class="market-state">${message}</div>`;
+    };
+
+    const ownedHeadHtml = `
+      <div class="owned-head">
+        <span></span>
+        <span>产品</span>
+        <span>US游戏榜</span>
+        <span>US应用榜</span>
+      </div>
+    `;
+
+    const setOwnedState = (list, message) => {
+      list.innerHTML = `${ownedHeadHtml}<div class="market-state">${message}</div>`;
     };
 
     const parseAppStoreSnapshotRow = (row) => {
@@ -2114,6 +2125,36 @@
       }
 
       return { text: "-", className: "market-change flat" };
+    };
+
+    const getProductInitials = (name) => {
+      return name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((word) => word[0])
+        .join("")
+        .toUpperCase();
+    };
+
+    const getOwnedRankClass = (rank) => {
+      if (!rank) {
+        return "rank-value empty";
+      }
+      if (rank <= 10) {
+        return "rank-value hot";
+      }
+      if (rank <= 50) {
+        return "rank-value good";
+      }
+      return "rank-value";
+    };
+
+    const createOwnedRank = (rank) => {
+      const value = document.createElement("span");
+      value.className = getOwnedRankClass(rank);
+      value.textContent = rank || "-";
+      return value;
     };
 
     const renderMarketRows = (list, apps) => {
@@ -2158,6 +2199,52 @@
         change.textContent = changeView.text;
 
         row.append(rank, icon, main, change);
+        list.appendChild(row);
+      });
+    };
+
+    const renderOwnedRows = (list, products, platformName) => {
+      list.innerHTML = ownedHeadHtml;
+
+      products.forEach((product) => {
+        const row = document.createElement("div");
+        row.className = "owned-row";
+
+        let icon;
+        if (product.icon_url) {
+          icon = document.createElement("img");
+          icon.className = "market-icon-img";
+          icon.src = product.icon_url;
+          icon.alt = `${product.name} icon`;
+          icon.loading = "lazy";
+        } else {
+          icon = document.createElement("span");
+          icon.className = "app-icon";
+          icon.style.background = "linear-gradient(135deg, #7b61ff, #31c6ff)";
+          icon.textContent = getProductInitials(product.name);
+        }
+
+        const main = document.createElement("div");
+        main.className = "market-main";
+
+        const title = document.createElement("div");
+        title.className = "market-title";
+
+        const titleText = product.url ? document.createElement("a") : document.createElement("span");
+        if (product.url) {
+          titleText.href = product.url;
+          titleText.target = "_blank";
+          titleText.rel = "noopener noreferrer";
+        }
+        titleText.textContent = product.name;
+        title.appendChild(titleText);
+
+        const meta = document.createElement("div");
+        meta.className = "market-meta";
+        meta.textContent = product.developer_name || product.app_id || `未配置 ${platformName} ID`;
+
+        main.append(title, meta);
+        row.append(icon, main, createOwnedRank(product.ranks?.us_games), createOwnedRank(product.ranks?.us_apps));
         list.appendChild(row);
       });
     };
@@ -2226,9 +2313,42 @@
       }
     }
 
+    async function renderOwnedProductRanks(platform, list, platformName) {
+      const params = new URLSearchParams({
+        platform,
+        date: rankDatePicker.value
+      });
+
+      setOwnedState(list, `正在加载自有产品排名 · ${platformName}...`);
+
+      try {
+        const response = await fetch(`/api/owned-product-ranks?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data.ok) {
+          throw new Error(data.error || "Unknown API error");
+        }
+
+        const rows = Array.isArray(data.rows) ? data.rows : [];
+        if (rows.length === 0) {
+          setOwnedState(list, `当前日期暂无自有产品排名 · ${platformName}`);
+          return;
+        }
+
+        renderOwnedRows(list, rows, platformName);
+      } catch (error) {
+        setOwnedState(list, `自有产品排名 · ${platformName} 加载失败`);
+      }
+    }
+
     function renderMarketCharts(rankType = "US游戏榜") {
       renderAppStoreChart(rankType);
       renderGooglePlayChart(rankType);
+      renderOwnedProductRanks("app_store", appStoreOwnedList, "App Store");
+      renderOwnedProductRanks("google_play", googlePlayOwnedList, "Google Play");
     }
 
     renderMarketCharts("US游戏榜");

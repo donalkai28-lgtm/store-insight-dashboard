@@ -8,6 +8,11 @@ const CHARTS = [
     url: "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/json"
   }
 ];
+const BEIJING_TIME_OFFSET_MS = 8 * 60 * 60 * 1000;
+const SCHEDULED_BEIJING_HOURS = new Set([0, 5, 9, 13, 17, 21]);
+const COLLECTION_MINUTE = 10;
+const COLLECTION_WINDOW_MINUTES = 30;
+const SNAPSHOT_TABLE = "app_store_rank_snapshots";
 
 function getRequiredEnv(name) {
   const value = process.env[name];
@@ -17,10 +22,40 @@ function getRequiredEnv(name) {
   return value;
 }
 
-function getSnapshotHour() {
-  const date = new Date();
-  date.setMinutes(0, 0, 0);
-  return date.toISOString();
+function padDatePart(value) {
+  return String(value).padStart(2, "0");
+}
+
+function getBeijingParts(date) {
+  const beijingDate = new Date(date.getTime() + BEIJING_TIME_OFFSET_MS);
+  return {
+    year: beijingDate.getUTCFullYear(),
+    month: beijingDate.getUTCMonth() + 1,
+    day: beijingDate.getUTCDate(),
+    hour: beijingDate.getUTCHours(),
+    minute: beijingDate.getUTCMinutes()
+  };
+}
+
+function getScheduledSnapshot() {
+  const parts = getBeijingParts(new Date());
+  const inCollectionWindow =
+    parts.minute >= COLLECTION_MINUTE &&
+    parts.minute < COLLECTION_MINUTE + COLLECTION_WINDOW_MINUTES;
+
+  if (!SCHEDULED_BEIJING_HOURS.has(parts.hour) || !inCollectionWindow) {
+    return null;
+  }
+
+  const beijingDate = `${parts.year}-${padDatePart(parts.month)}-${padDatePart(parts.day)}`;
+  const snapshotAt = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour) - BEIJING_TIME_OFFSET_MS);
+
+  return {
+    snapshotAt: snapshotAt.toISOString(),
+    beijingDate,
+    beijingHour: parts.hour,
+    isFinalSnapshot: parts.hour === 21
+  };
 }
 
 function isAuthorized(req) {
@@ -37,12 +72,15 @@ function isAuthorized(req) {
   return bearerToken === secret || querySecret === secret || headerSecret === secret;
 }
 
-function parseAppStoreEntry(entry, index, chartType, snapshotAt) {
+function parseAppStoreEntry(entry, index, chartType, snapshot) {
   const images = entry["im:image"] || [];
   const icon = images.length ? images[images.length - 1].label : "";
 
   return {
-    snapshot_at: snapshotAt,
+    snapshot_at: snapshot.snapshotAt,
+    beijing_date: snapshot.beijingDate,
+    beijing_hour: snapshot.beijingHour,
+    is_final_snapshot: snapshot.isFinalSnapshot,
     country: "us",
     chart_type: chartType,
     rank: index + 1,
@@ -54,7 +92,7 @@ function parseAppStoreEntry(entry, index, chartType, snapshotAt) {
   };
 }
 
-async function fetchChart(chart, snapshotAt) {
+async function fetchChart(chart, snapshot) {
   let response;
 
   try {
@@ -77,7 +115,7 @@ async function fetchChart(chart, snapshotAt) {
 
   const entries = Array.isArray(data.feed?.entry) ? data.feed.entry : [];
 
-  return entries.map((entry, index) => parseAppStoreEntry(entry, index, chart.chart_type, snapshotAt));
+  return entries.map((entry, index) => parseAppStoreEntry(entry, index, chart.chart_type, snapshot));
 }
 
 async function supabaseRequest(path, options = {}) {
@@ -109,6 +147,43 @@ async function supabaseRequest(path, options = {}) {
   return response;
 }
 
+async function supabaseJson(path) {
+  const response = await supabaseRequest(path);
+  return response.json();
+}
+
+async function getPreviousRows(chartType, snapshotAt) {
+  const params = new URLSearchParams({
+    select: "snapshot_at,rank,app_id",
+    country: "eq.us",
+    chart_type: `eq.${chartType}`,
+    snapshot_at: `lt.${snapshotAt}`,
+    order: "snapshot_at.desc,rank.asc",
+    limit: "100"
+  });
+
+  const rows = await supabaseJson(`${SNAPSHOT_TABLE}?${params.toString()}`);
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const previousSnapshotAt = rows[0].snapshot_at;
+  return rows.filter((row) => row.snapshot_at === previousSnapshotAt);
+}
+
+function attachRankChanges(rows, previousRows) {
+  const previousRankByAppId = new Map(previousRows.map((row) => [row.app_id, row.rank]));
+
+  return rows.map((row) => {
+    const previousRank = previousRankByAppId.get(row.app_id) || null;
+    return {
+      ...row,
+      previous_rank: previousRank,
+      rank_change: previousRank ? previousRank - row.rank : null
+    };
+  });
+}
+
 async function replaceChartSnapshot(chartType, snapshotAt, rows) {
   const query = new URLSearchParams({
     snapshot_at: `eq.${snapshotAt}`,
@@ -116,7 +191,7 @@ async function replaceChartSnapshot(chartType, snapshotAt, rows) {
     chart_type: `eq.${chartType}`
   });
 
-  await supabaseRequest(`app_store_rank_snapshots?${query.toString()}`, {
+  await supabaseRequest(`${SNAPSHOT_TABLE}?${query.toString()}`, {
     method: "DELETE"
   });
 
@@ -124,12 +199,23 @@ async function replaceChartSnapshot(chartType, snapshotAt, rows) {
     return;
   }
 
-  await supabaseRequest("app_store_rank_snapshots", {
+  await supabaseRequest(SNAPSHOT_TABLE, {
     method: "POST",
     headers: {
       Prefer: "return=minimal"
     },
     body: JSON.stringify(rows)
+  });
+}
+
+async function cleanupOldPartialSnapshots(currentBeijingDate) {
+  const query = new URLSearchParams({
+    beijing_date: `lt.${currentBeijingDate}`,
+    is_final_snapshot: "eq.false"
+  });
+
+  await supabaseRequest(`${SNAPSHOT_TABLE}?${query.toString()}`, {
+    method: "DELETE"
   });
 }
 
@@ -143,26 +229,40 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
 
-  const snapshotAt = getSnapshotHour();
+  const snapshot = getScheduledSnapshot();
+  if (!snapshot) {
+    return res.status(409).json({
+      ok: false,
+      error: "Collector can only run at Beijing time 00:10, 05:10, 09:10, 13:10, 17:10, 21:10"
+    });
+  }
 
   try {
     const results = [];
 
     for (const chart of CHARTS) {
-      const rows = await fetchChart(chart, snapshotAt);
-      await replaceChartSnapshot(chart.chart_type, snapshotAt, rows);
+      const rows = await fetchChart(chart, snapshot);
+      const previousRows = await getPreviousRows(chart.chart_type, snapshot.snapshotAt);
+      const rowsWithChanges = attachRankChanges(rows, previousRows);
+      await replaceChartSnapshot(chart.chart_type, snapshot.snapshotAt, rowsWithChanges);
       results.push({
         chart_type: chart.chart_type,
-        count: rows.length
+        count: rowsWithChanges.length
       });
     }
 
+    await cleanupOldPartialSnapshots(snapshot.beijingDate);
+
     return res.status(200).json({
       ok: true,
-      snapshot_at: snapshotAt,
+      snapshot_at: snapshot.snapshotAt,
+      beijing_date: snapshot.beijingDate,
+      beijing_hour: snapshot.beijingHour,
+      is_final_snapshot: snapshot.isFinalSnapshot,
       charts: results
     });
   } catch (error) {
+    console.error("App Store collector failed:", error);
     return res.status(500).json({
       ok: false,
       error: error.message

@@ -49,7 +49,7 @@ async function supabaseGet(path) {
 
 async function getLatestRows(chartType, dateText) {
   const params = new URLSearchParams({
-    select: "snapshot_at,rank,app_id,app_name,developer_name,icon_url,app_store_url",
+    select: "snapshot_at,rank,app_id,app_name,developer_name,icon_url,app_store_url,previous_rank,rank_change",
     country: "eq.us",
     chart_type: `eq.${chartType}`,
     order: "snapshot_at.desc,rank.asc",
@@ -95,6 +95,10 @@ async function getPreviousRows(chartType, snapshotAt) {
 }
 
 function attachRankChanges(rows, previousRows) {
+  if (rows.some((row) => Object.prototype.hasOwnProperty.call(row, "rank_change"))) {
+    return rows;
+  }
+
   const previousRankByAppId = new Map(previousRows.map((row) => [row.app_id, row.rank]));
 
   return rows.map((row) => {
