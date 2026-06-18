@@ -56,7 +56,7 @@ async function fetchChart(chart, snapshotAt) {
   let apps;
 
   try {
-    const googlePlayScraper = require("google-play-scraper");
+    const googlePlayScraper = await import("google-play-scraper");
     const gplay = googlePlayScraper.default || googlePlayScraper;
 
     apps = await gplay.list({
