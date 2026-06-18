@@ -31,19 +31,29 @@ async function supabaseGet(path) {
   const supabaseUrl = getRequiredEnv("SUPABASE_URL").replace(/\/$/, "");
   const serviceKey = getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY");
 
-  const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
-    headers: {
-      apikey: serviceKey,
-      Authorization: `Bearer ${serviceKey}`
-    }
-  });
+  let response;
+
+  try {
+    response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`
+      }
+    });
+  } catch (error) {
+    throw new Error(`Supabase fetch failed for ${path}: ${error.message}`);
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Supabase request failed: HTTP ${response.status} ${errorText}`);
   }
 
-  return response.json();
+  try {
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Supabase JSON parse failed for ${path}: ${error.message}`);
+  }
 }
 
 async function getLatestRows(chartType, dateText) {
@@ -134,6 +144,7 @@ module.exports = async function handler(req, res) {
       rows: attachRankChanges(rows, previousRows)
     });
   } catch (error) {
+    console.error("Google Play ranks API failed:", error);
     return res.status(500).json({
       ok: false,
       error: error.message

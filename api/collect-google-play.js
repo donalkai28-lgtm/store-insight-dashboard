@@ -157,6 +157,7 @@ module.exports = async function handler(req, res) {
       charts: results
     });
   } catch (error) {
+    console.error("Google Play collector failed:", error);
     return res.status(500).json({
       ok: false,
       error: error.message
