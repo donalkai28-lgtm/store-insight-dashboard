@@ -570,6 +570,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      flex-direction: column;
       min-width: 42px;
       height: 28px;
       margin: 0 auto;
@@ -578,6 +579,23 @@
       background: #eef2f6;
       font-size: 13px;
       font-weight: 900;
+    }
+
+    .rank-value.with-label {
+      height: 34px;
+      min-width: 54px;
+      gap: 1px;
+      line-height: 1.05;
+    }
+
+    .rank-label {
+      max-width: 48px;
+      overflow: hidden;
+      color: #7b8798;
+      font-size: 9px;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .rank-value.hot {
@@ -1329,7 +1347,7 @@
         <article class="panel market-panel">
           <div class="panel-header">
             <h2 class="panel-title store-title">App Store 榜单</h2>
-            <span class="platform" style="color: var(--ios)"><i class="dot"></i><span class="market-rank-type">US游戏榜</span><span class="rank-date">2026-06-16</span></span>
+            <span class="platform" style="color: var(--ios)"><i class="dot"></i><span class="rank-date">2026-06-16</span></span>
           </div>
           <div class="market-list" id="appStoreMarketList">
             <div class="market-row">
@@ -1446,7 +1464,7 @@
         <article class="panel market-panel">
           <div class="panel-header">
             <h2 class="panel-title play-title">Google Play 榜单</h2>
-            <span class="platform" style="color: var(--gp)"><i class="dot"></i><span class="market-rank-type">US游戏榜</span><span class="rank-date">2026-06-16</span></span>
+            <span class="platform" style="color: var(--gp)"><i class="dot"></i><span class="rank-date">2026-06-16</span></span>
           </div>
           <div class="market-list" id="googlePlayMarketList">
             <div class="market-row">
@@ -2040,10 +2058,7 @@
           button.classList.add("active");
 
           if (button.dataset.rankType) {
-            document.querySelectorAll(".market-rank-type").forEach((label) => {
-              label.textContent = button.dataset.rankType;
-            });
-            renderMarketCharts(button.dataset.rankType);
+            renderStoreMarketCharts(button.dataset.rankType);
           }
         });
       });
@@ -2073,7 +2088,7 @@
 
     rankDatePicker.addEventListener("change", () => {
       syncRankDate();
-      renderMarketCharts(document.querySelector(".tab.active")?.dataset.rankType || "US游戏榜");
+      renderAllRankPanels(document.querySelector(".tab.active")?.dataset.rankType || "US游戏榜");
     });
     rankDatePicker.addEventListener("click", (event) => {
       if (typeof rankDatePicker.showPicker === "function") {
@@ -2186,9 +2201,27 @@
       return "rank-value";
     };
 
-    const createOwnedRank = (rank) => {
+    const createOwnedRank = (rankData) => {
+      const isDetailedRank = rankData && typeof rankData === "object";
+      const rank = isDetailedRank ? rankData.rank : rankData;
+      const label = isDetailedRank ? rankData.label : "";
       const value = document.createElement("span");
       value.className = getOwnedRankClass(rank);
+
+      if (label) {
+        value.classList.add("with-label");
+
+        const rankText = document.createElement("span");
+        rankText.textContent = rank || "-";
+
+        const labelText = document.createElement("span");
+        labelText.className = "rank-label";
+        labelText.textContent = label;
+
+        value.append(rankText, labelText);
+        return value;
+      }
+
       value.textContent = rank || "-";
       return value;
     };
@@ -2290,7 +2323,7 @@
           titleText.target = "_blank";
           titleText.rel = "noopener noreferrer";
         }
-        titleText.textContent = product.name;
+        titleText.textContent = product.is_unlisted ? `${product.name}（未上架）` : product.name;
         title.appendChild(titleText);
 
         const meta = document.createElement("div");
@@ -2412,14 +2445,22 @@
       }
     }
 
-    function renderMarketCharts(rankType = "US游戏榜") {
+    function renderStoreMarketCharts(rankType = "US游戏榜") {
       renderAppStoreChart(rankType);
       renderGooglePlayChart(rankType);
+    }
+
+    function renderOwnedRankPanels() {
       renderOwnedProductRanks("app_store", appStoreOwnedList, "App Store");
       renderOwnedProductRanks("google_play", googlePlayOwnedList, "Google Play");
     }
 
-    renderMarketCharts("US游戏榜");
+    function renderAllRankPanels(rankType = "US游戏榜") {
+      renderStoreMarketCharts(rankType);
+      renderOwnedRankPanels();
+    }
+
+    renderAllRankPanels("US游戏榜");
 
     const hourlyFilter = document.querySelector(".hourly-filter");
     const dayFilter = document.querySelector("[data-grain='day']");

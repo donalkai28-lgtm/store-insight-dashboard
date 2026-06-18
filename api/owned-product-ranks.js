@@ -43,9 +43,12 @@ function getDateRange(dateText) {
   };
 }
 
-function getEnabledProducts() {
+function getConfig() {
   const configPath = path.join(process.cwd(), "owned-products.config.json");
-  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  return JSON.parse(fs.readFileSync(configPath, "utf8"));
+}
+
+function getEnabledProducts(config) {
   return (config.products || []).filter((product) => product.enabled !== false);
 }
 
@@ -98,7 +101,87 @@ async function getLatestChartRows(platformConfig, chartType, dateText) {
   return rows.filter((row) => row.snapshot_at === latestSnapshotAt).sort((a, b) => a.rank - b.rank);
 }
 
-function buildOwnedRows(products, platform, chartRowsByType) {
+async function getOwnedProfiles(platform, products) {
+  const productKeys = products.map((product) => product.key).filter(Boolean);
+  if (productKeys.length === 0) {
+    return new Map();
+  }
+
+  const params = new URLSearchParams({
+    select: "product_key,app_name,developer_name,icon_url,store_url,app_id",
+    platform: `eq.${platform}`,
+    product_key: `in.(${productKeys.join(",")})`
+  });
+
+  const rows = await supabaseGet(`owned_product_profiles?${params.toString()}`);
+  return new Map(rows.map((row) => [row.product_key, row]));
+}
+
+function getAppStoreCategoryRanks(product, config) {
+  return (product.app_store_genres || []).slice(0, 2).map((genre) => ({
+    rank: null,
+    label: config.app_store_genres?.[genre]?.name || genre
+  }));
+}
+
+function getGooglePlayCategoryRank(product, config) {
+  const categoryName =
+    Object.entries(config.google_play_categories || {}).find(([, category]) => category === product.google_play_category)?.[0] ||
+    product.google_play_category ||
+    "";
+
+  return {
+    rank: null,
+    label: categoryName ? categoryName.replace(/^\w/, (char) => char.toUpperCase()) : ""
+  };
+}
+
+function getBestCategoryRank(row) {
+  const categoryRanks = [row.ranks.us_category_1, row.ranks.us_category_2, row.ranks.us_category]
+    .filter(Boolean)
+    .map((rankInfo) => rankInfo.rank)
+    .filter((rank) => typeof rank === "number");
+
+  if (categoryRanks.length === 0) {
+    return null;
+  }
+
+  return Math.min(...categoryRanks);
+}
+
+function sortOwnedRows(rows) {
+  return rows.sort((a, b) => {
+    const aGameRank = a.ranks.us_games;
+    const bGameRank = b.ranks.us_games;
+
+    if (aGameRank && bGameRank) {
+      return aGameRank - bGameRank;
+    }
+    if (aGameRank) {
+      return -1;
+    }
+    if (bGameRank) {
+      return 1;
+    }
+
+    const aCategoryRank = getBestCategoryRank(a);
+    const bCategoryRank = getBestCategoryRank(b);
+
+    if (aCategoryRank && bCategoryRank) {
+      return aCategoryRank - bCategoryRank;
+    }
+    if (aCategoryRank) {
+      return -1;
+    }
+    if (bCategoryRank) {
+      return 1;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function buildOwnedRows(products, platform, chartRowsByType, profileByProductKey, config) {
   const platformConfig = PLATFORM_CONFIG[platform];
   const rankLookupByChart = Object.fromEntries(
     CHART_TYPES.map((chartType) => [
@@ -107,29 +190,48 @@ function buildOwnedRows(products, platform, chartRowsByType) {
     ])
   );
 
-  return products.map((product) => {
+  const getFallbackStoreUrl = (appId) => {
+    if (!appId) {
+      return "";
+    }
+
+    if (platform === "app_store") {
+      return `https://apps.apple.com/us/app/id${appId}`;
+    }
+
+    return `https://play.google.com/store/apps/details?id=${appId}&gl=US&hl=en`;
+  };
+
+  const rows = products.map((product) => {
     const appId = product[platformConfig.idField] || "";
     const gameRow = appId ? rankLookupByChart.us_games.get(appId) : null;
     const appRow = appId ? rankLookupByChart.us_apps.get(appId) : null;
     const sourceRow = gameRow || appRow || null;
+    const profile = profileByProductKey.get(product.key) || null;
+    const hasProfileInfo = Boolean(profile?.store_url || profile?.icon_url || profile?.developer_name);
+    const isUnlisted = !appId || (!sourceRow && !hasProfileInfo);
+    const appStoreCategoryRanks = platform === "app_store" ? getAppStoreCategoryRanks(product, config) : [];
 
     return {
       key: product.key,
-      name: product.name,
+      name: profile?.app_name || product.name,
       app_id: appId,
-      developer_name: sourceRow?.developer_name || "",
-      icon_url: sourceRow?.icon_url || "",
-      url: sourceRow?.app_store_url || sourceRow?.play_store_url || "",
+      developer_name: sourceRow?.developer_name || profile?.developer_name || "",
+      icon_url: sourceRow?.icon_url || profile?.icon_url || "",
+      url: sourceRow?.app_store_url || sourceRow?.play_store_url || profile?.store_url || getFallbackStoreUrl(appId),
       ranks: {
         us_games: gameRow?.rank || null,
         us_apps: appRow?.rank || null,
-        us_category_1: null,
-        us_category_2: null,
-        us_category: null
+        us_category_1: appStoreCategoryRanks[0] || null,
+        us_category_2: appStoreCategoryRanks[1] || null,
+        us_category: platform === "google_play" ? getGooglePlayCategoryRank(product, config) : null
       },
-      missing_id: !appId
+      missing_id: !appId,
+      is_unlisted: isUnlisted
     };
   });
+
+  return sortOwnedRows(rows);
 }
 
 module.exports = async function handler(req, res) {
@@ -144,8 +246,10 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const products = getEnabledProducts();
+    const config = getConfig();
+    const products = getEnabledProducts(config);
     const chartRowsByType = {};
+    const profileByProductKey = await getOwnedProfiles(platform, products);
 
     for (const chartType of CHART_TYPES) {
       chartRowsByType[chartType] = await getLatestChartRows(PLATFORM_CONFIG[platform], chartType, req.query?.date);
@@ -154,7 +258,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({
       ok: true,
       platform,
-      rows: buildOwnedRows(products, platform, chartRowsByType),
+      rows: buildOwnedRows(products, platform, chartRowsByType, profileByProductKey, config),
       snapshots: {
         us_games: chartRowsByType.us_games[0]?.snapshot_at || null,
         us_apps: chartRowsByType.us_apps[0]?.snapshot_at || null

@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+
 const CHARTS = [
   {
     chart_type: "us_games",
@@ -13,6 +16,7 @@ const SCHEDULED_BEIJING_HOURS = new Set([0, 5, 9, 13, 17, 21]);
 const COLLECTION_MINUTE = 10;
 const COLLECTION_WINDOW_MINUTES = 30;
 const SNAPSHOT_TABLE = "app_store_rank_snapshots";
+const PROFILE_TABLE = "owned_product_profiles";
 
 function getRequiredEnv(name) {
   const value = process.env[name];
@@ -70,6 +74,12 @@ function isAuthorized(req) {
   const headerSecret = req.headers["x-collect-secret"];
 
   return bearerToken === secret || querySecret === secret || headerSecret === secret;
+}
+
+function getEnabledProducts() {
+  const configPath = path.join(process.cwd(), "owned-products.config.json");
+  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  return (config.products || []).filter((product) => product.enabled !== false);
 }
 
 function parseAppStoreEntry(entry, index, chartType, snapshot) {
@@ -150,6 +160,57 @@ async function supabaseRequest(path, options = {}) {
 async function supabaseJson(path) {
   const response = await supabaseRequest(path);
   return response.json();
+}
+
+async function fetchOwnedProductProfiles(snapshot) {
+  const products = getEnabledProducts().filter((product) => product.app_store_id);
+  if (products.length === 0) {
+    return [];
+  }
+
+  const productByAppId = new Map(products.map((product) => [product.app_store_id, product]));
+  const ids = products.map((product) => product.app_store_id).join(",");
+  const response = await fetch(`https://itunes.apple.com/lookup?id=${ids}&country=us`);
+
+  if (!response.ok) {
+    throw new Error(`Apple lookup failed: HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+  const results = Array.isArray(data.results) ? data.results : [];
+
+  return results.map((app) => {
+    const appId = String(app.trackId || "");
+    const product = productByAppId.get(appId);
+
+    return {
+      platform: "app_store",
+      product_key: product?.key || appId,
+      app_id: appId,
+      app_name: app.trackName || product?.name || "Unknown App",
+      developer_name: app.sellerName || app.artistName || "",
+      icon_url: app.artworkUrl100 || app.artworkUrl512 || "",
+      store_url: app.trackViewUrl || "",
+      snapshot_at: snapshot.snapshotAt,
+      beijing_date: snapshot.beijingDate,
+      beijing_hour: snapshot.beijingHour,
+      updated_at: new Date().toISOString()
+    };
+  });
+}
+
+async function upsertOwnedProductProfiles(rows) {
+  if (rows.length === 0) {
+    return;
+  }
+
+  await supabaseRequest(PROFILE_TABLE, {
+    method: "POST",
+    headers: {
+      Prefer: "resolution=merge-duplicates,return=minimal"
+    },
+    body: JSON.stringify(rows)
+  });
 }
 
 async function getPreviousRows(chartType, snapshotAt) {
@@ -251,6 +312,9 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    const ownedProfiles = await fetchOwnedProductProfiles(snapshot);
+    await upsertOwnedProductProfiles(ownedProfiles);
+
     await cleanupOldPartialSnapshots(snapshot.beijingDate);
 
     return res.status(200).json({
@@ -259,6 +323,7 @@ module.exports = async function handler(req, res) {
       beijing_date: snapshot.beijingDate,
       beijing_hour: snapshot.beijingHour,
       is_final_snapshot: snapshot.isFinalSnapshot,
+      owned_profiles: ownedProfiles.length,
       charts: results
     });
   } catch (error) {

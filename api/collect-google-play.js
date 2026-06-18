@@ -1,3 +1,6 @@
+const fs = require("fs");
+const path = require("path");
+
 const CHARTS = [
   {
     chart_type: "us_games",
@@ -13,6 +16,7 @@ const SCHEDULED_BEIJING_HOURS = new Set([0, 5, 9, 13, 17, 21]);
 const COLLECTION_MINUTE = 10;
 const COLLECTION_WINDOW_MINUTES = 30;
 const SNAPSHOT_TABLE = "google_play_rank_snapshots";
+const PROFILE_TABLE = "owned_product_profiles";
 
 function getRequiredEnv(name) {
   const value = process.env[name];
@@ -72,6 +76,24 @@ function isAuthorized(req) {
   return bearerToken === secret || querySecret === secret || headerSecret === secret;
 }
 
+function getGooglePlayUrl(appId, url = "") {
+  const baseUrl = url || (appId ? `https://play.google.com/store/apps/details?id=${appId}` : "");
+  if (!baseUrl) {
+    return "";
+  }
+
+  const normalizedUrl = new URL(baseUrl);
+  normalizedUrl.searchParams.set("gl", "US");
+  normalizedUrl.searchParams.set("hl", "en");
+  return normalizedUrl.toString();
+}
+
+function getEnabledProducts() {
+  const configPath = path.join(process.cwd(), "owned-products.config.json");
+  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  return (config.products || []).filter((product) => product.enabled !== false);
+}
+
 function parseGooglePlayApp(app, index, chartType, snapshot) {
   return {
     snapshot_at: snapshot.snapshotAt,
@@ -85,7 +107,7 @@ function parseGooglePlayApp(app, index, chartType, snapshot) {
     app_name: app.title || "Unknown App",
     developer_name: app.developer || "Unknown Developer",
     icon_url: app.icon || "",
-    play_store_url: app.url || (app.appId ? `https://play.google.com/store/apps/details?id=${app.appId}` : ""),
+    play_store_url: getGooglePlayUrl(app.appId, app.url),
     score: typeof app.score === "number" ? app.score : null
   };
 }
@@ -144,6 +166,58 @@ async function supabaseRequest(path, options = {}) {
 async function supabaseJson(path) {
   const response = await supabaseRequest(path);
   return response.json();
+}
+
+async function fetchOwnedProductProfiles(snapshot) {
+  const products = getEnabledProducts().filter((product) => product.google_play_package);
+  if (products.length === 0) {
+    return [];
+  }
+
+  const googlePlayScraper = await import("google-play-scraper");
+  const gplay = googlePlayScraper.default || googlePlayScraper;
+
+  const results = await Promise.allSettled(
+    products.map(async (product) => {
+      const app = await gplay.app({
+        appId: product.google_play_package,
+        country: "us",
+        lang: "en"
+      });
+
+      return {
+        platform: "google_play",
+        product_key: product.key,
+        app_id: product.google_play_package,
+        app_name: app.title || product.name,
+        developer_name: app.developer || "",
+        icon_url: app.icon || "",
+        store_url: getGooglePlayUrl(product.google_play_package, app.url),
+        snapshot_at: snapshot.snapshotAt,
+        beijing_date: snapshot.beijingDate,
+        beijing_hour: snapshot.beijingHour,
+        updated_at: new Date().toISOString()
+      };
+    })
+  );
+
+  return results
+    .filter((result) => result.status === "fulfilled")
+    .map((result) => result.value);
+}
+
+async function upsertOwnedProductProfiles(rows) {
+  if (rows.length === 0) {
+    return;
+  }
+
+  await supabaseRequest(PROFILE_TABLE, {
+    method: "POST",
+    headers: {
+      Prefer: "resolution=merge-duplicates,return=minimal"
+    },
+    body: JSON.stringify(rows)
+  });
 }
 
 async function getPreviousRows(chartType, snapshotAt) {
@@ -245,6 +319,9 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    const ownedProfiles = await fetchOwnedProductProfiles(snapshot);
+    await upsertOwnedProductProfiles(ownedProfiles);
+
     await cleanupOldPartialSnapshots(snapshot.beijingDate);
 
     return res.status(200).json({
@@ -253,6 +330,7 @@ module.exports = async function handler(req, res) {
       beijing_date: snapshot.beijingDate,
       beijing_hour: snapshot.beijingHour,
       is_final_snapshot: snapshot.isFinalSnapshot,
+      owned_profiles: ownedProfiles.length,
       charts: results
     });
   } catch (error) {
