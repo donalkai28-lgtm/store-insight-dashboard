@@ -1,0 +1,75 @@
+{
+  "timezone": "Asia/Shanghai",
+  "products": [
+    {
+      "key": "block-blast",
+      "name": "Block Blast!",
+      "app_store_id": "1617391485",
+      "google_play_package": "com.block.juggle",
+      "enabled": true
+    },
+    {
+      "key": "block-crush",
+      "name": "Block Crush!",
+      "app_store_id": "1638139403",
+      "google_play_package": "com.wood.block.sudoku.puzzle.bm",
+      "enabled": true
+    },
+    {
+      "key": "mahjong-blast",
+      "name": "Mahjong Blast",
+      "app_store_id": "6747492600",
+      "google_play_package": "com.nebula.mahjongtile",
+      "enabled": true
+    },
+    {
+      "key": "sudoku-master",
+      "name": "Sudoku Master!",
+      "app_store_id": "1618041797",
+      "google_play_package": "com.mathbrain.sudoku",
+      "enabled": true
+    },
+    {
+      "key": "double-tile",
+      "name": "Double Tile!",
+      "app_store_id": "6754014472",
+      "google_play_package": "com.hungrystudio.mahjong",
+      "enabled": true
+    },
+    {
+      "key": "word-solitaire-go",
+      "name": "Word Solitaire Go",
+      "app_store_id": "6758197491",
+      "google_play_package": "com.nebula.wordsolitaire",
+      "enabled": true
+    },
+    {
+      "key": "tap-tile",
+      "name": "Tap Tile!",
+      "app_store_id": "6762776406",
+      "google_play_package": "com.nebula.tiles",
+      "enabled": true
+    },
+    {
+      "key": "arrows-blast",
+      "name": "Arrows Blast",
+      "app_store_id": "",
+      "google_play_package": "com.nebula.arrows",
+      "enabled": true
+    },
+    {
+      "key": "jade-mahjong",
+      "name": "Jade Mahjong",
+      "app_store_id": "6752887466",
+      "google_play_package": "com.wonderful.mahjong",
+      "enabled": true
+    },
+    {
+      "key": "nut-sort-go",
+      "name": "Nut Sort Go!",
+      "app_store_id": "6754952717",
+      "google_play_package": "com.nebula.nutsort",
+      "enabled": true
+    }
+  ]
+}

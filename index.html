@@ -2032,6 +2032,13 @@
 
     const rankDatePicker = document.querySelector(".rank-date-picker");
     const rankDateValue = document.querySelector(".rank-date-value");
+    const getTodayDateValue = () => {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
     const formatRankDate = (value) => {
       const [year, month, day] = value.split("-");
       return `${year}年${month}月${day}日`;
@@ -2053,6 +2060,7 @@
         rankDatePicker.showPicker();
       }
     });
+    rankDatePicker.value = getTodayDateValue();
     syncRankDate();
 
     const appStoreMarketList = document.querySelector("#appStoreMarketList");
