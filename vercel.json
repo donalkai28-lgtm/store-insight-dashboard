@@ -15,11 +15,5 @@
         }
       ]
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/collect-app-store",
-      "schedule": "0 0 * * *"
-    }
   ]
 }
