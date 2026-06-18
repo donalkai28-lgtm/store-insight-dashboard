@@ -1,14 +1,11 @@
-const googlePlayScraper = require("google-play-scraper");
-const gplay = googlePlayScraper.default || googlePlayScraper;
-
 const CHARTS = [
   {
     chart_type: "us_games",
-    category: gplay.category.GAME
+    category: "GAME"
   },
   {
     chart_type: "us_apps",
-    category: gplay.category.APPLICATION
+    category: "APPLICATION"
   }
 ];
 
@@ -59,8 +56,11 @@ async function fetchChart(chart, snapshotAt) {
   let apps;
 
   try {
+    const googlePlayScraper = require("google-play-scraper");
+    const gplay = googlePlayScraper.default || googlePlayScraper;
+
     apps = await gplay.list({
-      collection: gplay.collection.TOP_FREE,
+      collection: "TOP_FREE",
       category: chart.category,
       country: "us",
       lang: "en",
