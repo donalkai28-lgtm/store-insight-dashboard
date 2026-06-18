@@ -9,6 +9,18 @@ const CHARTS = [
   {
     chart_type: "us_apps",
     category: "APPLICATION"
+  },
+  {
+    chart_type: "us_category_GAME_PUZZLE",
+    category: "GAME_PUZZLE"
+  },
+  {
+    chart_type: "us_category_GAME_BOARD",
+    category: "GAME_BOARD"
+  },
+  {
+    chart_type: "us_category_GAME_WORD",
+    category: "GAME_WORD"
   }
 ];
 const BEIJING_TIME_OFFSET_MS = 8 * 60 * 60 * 1000;

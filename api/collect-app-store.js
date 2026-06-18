@@ -9,6 +9,26 @@ const CHARTS = [
   {
     chart_type: "us_apps",
     url: "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/json"
+  },
+  {
+    chart_type: "us_category_puzzle",
+    url: "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/genre=7012/json"
+  },
+  {
+    chart_type: "us_category_casual",
+    url: "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/genre=7003/json"
+  },
+  {
+    chart_type: "us_category_board",
+    url: "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/genre=7004/json"
+  },
+  {
+    chart_type: "us_category_card",
+    url: "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/genre=7005/json"
+  },
+  {
+    chart_type: "us_category_word",
+    url: "https://itunes.apple.com/us/rss/topfreeapplications/limit=100/genre=7019/json"
   }
 ];
 const BEIJING_TIME_OFFSET_MS = 8 * 60 * 60 * 1000;
