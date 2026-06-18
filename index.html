@@ -511,6 +511,10 @@
       color: #a3acba;
     }
 
+    .market-change.new-entry {
+      color: #9f2235;
+    }
+
     .owned-list {
       height: 560px;
     }
@@ -2067,8 +2071,25 @@
         name: row.app_name || "Unknown App",
         developer: row.developer_name || "Unknown Developer",
         url: row.app_store_url || "#",
-        icon: row.icon_url || ""
+        icon: row.icon_url || "",
+        rankChange: row.rank_change
       };
+    };
+
+    const getRankChangeView = (rankChange) => {
+      if (rankChange === null || rankChange === undefined || Number.isNaN(Number(rankChange))) {
+        return { text: "新进榜", className: "market-change new-entry" };
+      }
+
+      if (rankChange > 0) {
+        return { text: `▲ ${rankChange}`, className: "market-change" };
+      }
+
+      if (rankChange < 0) {
+        return { text: `▼ ${Math.abs(rankChange)}`, className: "market-change down" };
+      }
+
+      return { text: "-", className: "market-change flat" };
     };
 
     const renderAppStoreRows = (apps) => {
@@ -2107,9 +2128,10 @@
 
         main.append(title, meta);
 
+        const changeView = getRankChangeView(app.rankChange);
         const change = document.createElement("span");
-        change.className = "market-change flat";
-        change.textContent = "-";
+        change.className = changeView.className;
+        change.textContent = changeView.text;
 
         row.append(rank, icon, main, change);
         appStoreMarketList.appendChild(row);
