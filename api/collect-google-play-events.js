@@ -80,15 +80,15 @@ function getGooglePlayEventUrl(eventHref) {
 }
 
 function parseEventCards(html, product, collectedAt) {
-  const eventCards = html.match(/<div class="ULeU3b Dg4Lzc" role="listitem">[\s\S]*?(?=<div class="ULeU3b Dg4Lzc" role="listitem">|<\/div><\/div><\/div><\/div><\/div><c-data)/g) || [];
+  const eventCards = html.match(/<a class="Si6A0c[^"]*" href="[^"]*\/store\/apps\/eventdetails\/[^"]*">[\s\S]*?<\/a>/g) || [];
 
   return eventCards.map((card) => {
-    const relativeEndTime = decodeHtml(card.match(/<div class="DU6Edd nDcdqe">([^<]+)<\/div>/)?.[1] || "");
+    const relativeEndTime = decodeHtml(card.match(/<div class="DU6Edd [^"]+">([^<]+)<\/div>/)?.[1] || "");
     const imageUrl = decodeHtml(card.match(/<img src="([^"]+)"/)?.[1] || "");
-    const title = decodeHtml(card.match(/<div class="gFWm9b nDcdqe">([^<]+)<\/div>/)?.[1] || "");
+    const title = decodeHtml(card.match(/<div class="gFWm9b [^"]+">([^<]+)<\/div>/)?.[1] || "");
     const eventHref = decodeHtml(card.match(/href="([^"]*\/store\/apps\/eventdetails\/[^"]+)"/)?.[1] || "");
 
-    if (!title || !relativeEndTime) {
+    if (!title || !relativeEndTime || !relativeEndTime.startsWith("Ends in")) {
       return null;
     }
 
@@ -183,6 +183,12 @@ module.exports = async function handler(req, res) {
 
     const results = await Promise.allSettled(products.map((product) => fetchProductEvents(product, collectedAt)));
     const rows = results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
+    const product_event_counts = results.map((result, index) => ({
+      product_key: products[index].key,
+      app_name: products[index].name,
+      events: result.status === "fulfilled" ? result.value.length : 0,
+      error: result.status === "rejected" ? result.reason.message : ""
+    }));
 
     await replaceDailyEvents(beijingDate, rows);
 
@@ -191,6 +197,7 @@ module.exports = async function handler(req, res) {
       beijing_date: beijingDate,
       products: products.length,
       events: rows.length,
+      product_event_counts,
       failed_products: results.filter((result) => result.status === "rejected").length
     });
   } catch (error) {

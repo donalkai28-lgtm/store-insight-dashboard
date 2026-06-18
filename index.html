@@ -1277,14 +1277,45 @@
     }
 
     .event-info strong {
+      display: inline-block;
+      max-width: 100%;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(54, 135, 74, 0.13);
+      color: #12351d;
       font-size: 13px;
+      font-weight: 900;
+      box-shadow: inset 0 0 0 1px rgba(54, 135, 74, 0.16);
+    }
+
+    .event-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      min-width: 0;
+    }
+
+    .event-info .event-app-name {
+      min-width: 0;
+      color: rgba(23, 51, 31, 0.72);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .event-info .event-end-time {
+      flex: 0 0 auto;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(206, 55, 55, 0.12);
+      color: #c73333;
+      font-size: 16px;
       font-weight: 900;
     }
 
     .event-info span {
-      margin-top: 3px;
       color: rgba(23, 51, 31, 0.72);
-      font-size: 12px;
+      font-size: 16px;
       font-weight: 700;
     }
 
@@ -2338,10 +2369,23 @@
         const title = document.createElement("strong");
         title.textContent = event.event_title || "Untitled Event";
 
-        const time = document.createElement("span");
-        time.textContent = event.relative_end_time ? `${event.app_name} · ${event.relative_end_time}` : event.app_name;
+        const meta = document.createElement("div");
+        meta.className = "event-meta-row";
 
-        info.append(title, time);
+        const appName = document.createElement("span");
+        appName.className = "event-app-name";
+        appName.textContent = event.app_name;
+
+        meta.appendChild(appName);
+
+        if (event.relative_end_time) {
+          const time = document.createElement("span");
+          time.className = "event-end-time";
+          time.textContent = event.relative_end_time;
+          meta.appendChild(time);
+        }
+
+        info.append(title, meta);
         cardLink.append(imageBox, info);
         card.appendChild(cardLink);
         googlePlayEventGrid.appendChild(card);
