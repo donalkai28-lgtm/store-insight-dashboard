@@ -48,7 +48,7 @@ async function supabaseGet(path) {
 
 async function getLatestRows(chartType, dateText) {
   const params = new URLSearchParams({
-    select: "snapshot_at,rank,app_id,app_name,developer_name,icon_url,app_store_url",
+    select: "snapshot_at,rank,app_id,app_name,developer_name,icon_url,play_store_url,score",
     country: "eq.us",
     chart_type: `eq.${chartType}`,
     order: "snapshot_at.desc,rank.asc",
@@ -61,7 +61,7 @@ async function getLatestRows(chartType, dateText) {
     params.append("snapshot_at", `lt.${dateRange.end}`);
   }
 
-  const rows = await supabaseGet(`app_store_rank_snapshots?${params.toString()}`);
+  const rows = await supabaseGet(`google_play_rank_snapshots?${params.toString()}`);
   if (rows.length === 0) {
     return [];
   }
@@ -84,7 +84,7 @@ async function getPreviousRows(chartType, snapshotAt) {
     limit: "100"
   });
 
-  const rows = await supabaseGet(`app_store_rank_snapshots?${params.toString()}`);
+  const rows = await supabaseGet(`google_play_rank_snapshots?${params.toString()}`);
   if (rows.length === 0) {
     return [];
   }

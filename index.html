@@ -1428,7 +1428,7 @@
             <h2 class="panel-title play-title">Google Play 榜单</h2>
             <span class="platform" style="color: var(--gp)"><i class="dot"></i><span class="market-rank-type">US游戏榜</span><span class="rank-date">2026-06-16</span></span>
           </div>
-          <div class="market-list">
+          <div class="market-list" id="googlePlayMarketList">
             <div class="market-row">
               <span class="market-rank">1</span>
               <span class="app-icon" style="background: #111">Chat</span>
@@ -2022,7 +2022,7 @@
             document.querySelectorAll(".market-rank-type").forEach((label) => {
               label.textContent = button.dataset.rankType;
             });
-            renderAppStoreChart(button.dataset.rankType);
+            renderMarketCharts(button.dataset.rankType);
           }
         });
       });
@@ -2045,7 +2045,7 @@
 
     rankDatePicker.addEventListener("change", () => {
       syncRankDate();
-      renderAppStoreChart(document.querySelector(".tab.active")?.dataset.rankType || "US游戏榜");
+      renderMarketCharts(document.querySelector(".tab.active")?.dataset.rankType || "US游戏榜");
     });
     rankDatePicker.addEventListener("click", (event) => {
       if (typeof rankDatePicker.showPicker === "function") {
@@ -2056,7 +2056,8 @@
     syncRankDate();
 
     const appStoreMarketList = document.querySelector("#appStoreMarketList");
-    const appStoreChartTypes = {
+    const googlePlayMarketList = document.querySelector("#googlePlayMarketList");
+    const marketChartTypes = {
       "US游戏榜": "us_games",
       "US应用榜": "us_apps"
     };
@@ -2065,12 +2066,27 @@
       appStoreMarketList.innerHTML = `<div class="market-state">${message}</div>`;
     };
 
+    const setGooglePlayState = (message) => {
+      googlePlayMarketList.innerHTML = `<div class="market-state">${message}</div>`;
+    };
+
     const parseAppStoreSnapshotRow = (row) => {
       return {
         rank: row.rank,
         name: row.app_name || "Unknown App",
         developer: row.developer_name || "Unknown Developer",
         url: row.app_store_url || "#",
+        icon: row.icon_url || "",
+        rankChange: row.rank_change
+      };
+    };
+
+    const parseGooglePlaySnapshotRow = (row) => {
+      return {
+        rank: row.rank,
+        name: row.app_name || "Unknown App",
+        developer: row.developer_name || "Unknown Developer",
+        url: row.play_store_url || "#",
         icon: row.icon_url || "",
         rankChange: row.rank_change
       };
@@ -2092,8 +2108,8 @@
       return { text: "-", className: "market-change flat" };
     };
 
-    const renderAppStoreRows = (apps) => {
-      appStoreMarketList.innerHTML = "";
+    const renderMarketRows = (list, apps) => {
+      list.innerHTML = "";
 
       apps.slice(0, 100).forEach((app) => {
         const row = document.createElement("div");
@@ -2134,12 +2150,12 @@
         change.textContent = changeView.text;
 
         row.append(rank, icon, main, change);
-        appStoreMarketList.appendChild(row);
+        list.appendChild(row);
       });
     };
 
     async function renderAppStoreChart(rankType = "US游戏榜") {
-      const chartType = appStoreChartTypes[rankType] || appStoreChartTypes["US游戏榜"];
+      const chartType = marketChartTypes[rankType] || marketChartTypes["US游戏榜"];
       const params = new URLSearchParams({
         chart_type: chartType,
         date: rankDatePicker.value
@@ -2164,13 +2180,50 @@
           return;
         }
 
-        renderAppStoreRows(rows.map(parseAppStoreSnapshotRow));
+        renderMarketRows(appStoreMarketList, rows.map(parseAppStoreSnapshotRow));
       } catch (error) {
         setAppStoreState("App Store 榜单加载失败，请稍后重试");
       }
     }
 
-    renderAppStoreChart("US游戏榜");
+    async function renderGooglePlayChart(rankType = "US游戏榜") {
+      const chartType = marketChartTypes[rankType] || marketChartTypes["US游戏榜"];
+      const params = new URLSearchParams({
+        chart_type: chartType,
+        date: rankDatePicker.value
+      });
+
+      setGooglePlayState("正在加载 Google Play 榜单...");
+
+      try {
+        const response = await fetch(`/api/google-play-ranks?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data.ok) {
+          throw new Error(data.error || "Unknown API error");
+        }
+
+        const rows = Array.isArray(data.rows) ? data.rows : [];
+        if (rows.length === 0) {
+          setGooglePlayState("当前日期暂无 Google Play 榜单快照");
+          return;
+        }
+
+        renderMarketRows(googlePlayMarketList, rows.map(parseGooglePlaySnapshotRow));
+      } catch (error) {
+        setGooglePlayState("Google Play 榜单加载失败，请稍后重试");
+      }
+    }
+
+    function renderMarketCharts(rankType = "US游戏榜") {
+      renderAppStoreChart(rankType);
+      renderGooglePlayChart(rankType);
+    }
+
+    renderMarketCharts("US游戏榜");
 
     const hourlyFilter = document.querySelector(".hourly-filter");
     const dayFilter = document.querySelector("[data-grain='day']");

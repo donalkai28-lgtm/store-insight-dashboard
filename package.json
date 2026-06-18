@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "google-play-scraper": "latest"
+  },
+  "devDependencies": {}
+}
