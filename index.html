@@ -88,6 +88,16 @@
       color: var(--muted);
       font-size: 15px;
       font-weight: 700;
+      text-align: right;
+    }
+
+    .update-time {
+      transition: color 0.18s ease;
+    }
+
+    .update-time.active {
+      color: #e13a4b;
+      font-weight: 900;
     }
 
     .rank-date-field {
@@ -106,7 +116,7 @@
       background:
         linear-gradient(135deg, rgba(255, 126, 158, 0.12), rgba(255, 255, 255, 0.9)),
         #fff;
-      font-size: 12.8px;
+      font-size: 14.8px;
       font-weight: 400;
       outline: none;
       cursor: pointer;
@@ -525,6 +535,11 @@
       grid-template-columns: 38px minmax(0, 1fr) 52px 52px;
       align-items: center;
       gap: 8px;
+    }
+
+    .owned-list.app-store-owned .owned-head,
+    .owned-list.app-store-owned .owned-row {
+      grid-template-columns: 38px minmax(0, 1fr) 52px 58px 58px;
     }
 
     .owned-head {
@@ -1297,7 +1312,16 @@
           <input class="rank-date-picker" type="date" value="2026-06-16" aria-label="选择榜单日期" />
         </div>
       </div>
-      <div class="toolbar-note">双端商店榜单和自有产品榜单 均为美国榜单数据，数据小时级更新</div>
+      <div class="toolbar-note">
+        双端商店榜单和自有产品榜单 均为美国榜单数据<br>
+        数据更新节点：
+        <span class="update-time" data-update-hour="0">00:10</span>、
+        <span class="update-time" data-update-hour="5">05:10</span>、
+        <span class="update-time" data-update-hour="9">09:10</span>、
+        <span class="update-time" data-update-hour="13">13:10</span>、
+        <span class="update-time" data-update-hour="17">17:10</span>、
+        <span class="update-time" data-update-hour="21">21:10</span>
+      </div>
     </section>
 
     <section class="dashboard">
@@ -1541,12 +1565,13 @@
             <h2 class="panel-title">自有产品排名 · <span class="title-store">App Store</span></h2>
             <span class="rank-date">2026-06-16</span>
           </div>
-          <div class="market-list owned-list" id="appStoreOwnedList">
+          <div class="market-list owned-list app-store-owned" id="appStoreOwnedList">
             <div class="owned-head">
               <span></span>
               <span>产品</span>
               <span>US游戏榜</span>
-              <span>US应用榜</span>
+              <span>US分类榜1</span>
+              <span>US分类榜2</span>
             </div>
             <div class="owned-row">
               <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BC</span>
@@ -1666,12 +1691,12 @@
             <h2 class="panel-title">自有产品排名 · <span class="title-play">Google Play</span></h2>
             <span class="rank-date">2026-06-16</span>
           </div>
-          <div class="market-list owned-list" id="googlePlayOwnedList">
+          <div class="market-list owned-list google-play-owned" id="googlePlayOwnedList">
             <div class="owned-head">
               <span></span>
               <span>产品</span>
               <span>US游戏榜</span>
-              <span>US应用榜</span>
+              <span>US分类榜</span>
             </div>
             <div class="owned-row">
               <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BC</span>
@@ -2076,17 +2101,28 @@
       googlePlayMarketList.innerHTML = `<div class="market-state">${message}</div>`;
     };
 
-    const ownedHeadHtml = `
+    const ownedHeadHtmlByPlatform = {
+      app_store: `
       <div class="owned-head">
         <span></span>
         <span>产品</span>
         <span>US游戏榜</span>
-        <span>US应用榜</span>
+        <span>US分类榜1</span>
+        <span>US分类榜2</span>
       </div>
-    `;
+    `,
+      google_play: `
+      <div class="owned-head">
+        <span></span>
+        <span>产品</span>
+        <span>US游戏榜</span>
+        <span>US分类榜</span>
+      </div>
+    `
+    };
 
-    const setOwnedState = (list, message) => {
-      list.innerHTML = `${ownedHeadHtml}<div class="market-state">${message}</div>`;
+    const setOwnedState = (list, message, platform = "app_store") => {
+      list.innerHTML = `${ownedHeadHtmlByPlatform[platform]}<div class="market-state">${message}</div>`;
     };
 
     const parseAppStoreSnapshotRow = (row) => {
@@ -2157,6 +2193,24 @@
       return value;
     };
 
+    const setActiveUpdateTime = (snapshotAt) => {
+      if (!snapshotAt) {
+        return;
+      }
+
+      const snapshotDate = new Date(snapshotAt);
+      if (Number.isNaN(snapshotDate.getTime())) {
+        return;
+      }
+
+      const beijingDate = new Date(snapshotDate.getTime() + 8 * 60 * 60 * 1000);
+      const beijingHour = String(beijingDate.getUTCHours());
+
+      document.querySelectorAll(".update-time").forEach((item) => {
+        item.classList.toggle("active", item.dataset.updateHour === beijingHour);
+      });
+    };
+
     const renderMarketRows = (list, apps) => {
       list.innerHTML = "";
 
@@ -2203,8 +2257,8 @@
       });
     };
 
-    const renderOwnedRows = (list, products, platformName) => {
-      list.innerHTML = ownedHeadHtml;
+    const renderOwnedRows = (list, products, platform, platformName) => {
+      list.innerHTML = ownedHeadHtmlByPlatform[platform];
 
       products.forEach((product) => {
         const row = document.createElement("div");
@@ -2244,7 +2298,18 @@
         meta.textContent = product.developer_name || product.app_id || `未配置 ${platformName} ID`;
 
         main.append(title, meta);
-        row.append(icon, main, createOwnedRank(product.ranks?.us_games), createOwnedRank(product.ranks?.us_apps));
+
+        if (platform === "app_store") {
+          row.append(
+            icon,
+            main,
+            createOwnedRank(product.ranks?.us_games),
+            createOwnedRank(product.ranks?.us_category_1),
+            createOwnedRank(product.ranks?.us_category_2)
+          );
+        } else {
+          row.append(icon, main, createOwnedRank(product.ranks?.us_games), createOwnedRank(product.ranks?.us_category));
+        }
         list.appendChild(row);
       });
     };
@@ -2275,6 +2340,7 @@
           return;
         }
 
+        setActiveUpdateTime(data.snapshot_at);
         renderMarketRows(appStoreMarketList, rows.map(parseAppStoreSnapshotRow));
       } catch (error) {
         setAppStoreState("App Store 榜单加载失败，请稍后重试");
@@ -2307,6 +2373,7 @@
           return;
         }
 
+        setActiveUpdateTime(data.snapshot_at);
         renderMarketRows(googlePlayMarketList, rows.map(parseGooglePlaySnapshotRow));
       } catch (error) {
         setGooglePlayState("Google Play 榜单加载失败，请稍后重试");
@@ -2319,7 +2386,7 @@
         date: rankDatePicker.value
       });
 
-      setOwnedState(list, `正在加载自有产品排名 · ${platformName}...`);
+      setOwnedState(list, `正在加载自有产品排名 · ${platformName}...`, platform);
 
       try {
         const response = await fetch(`/api/owned-product-ranks?${params.toString()}`);
@@ -2334,13 +2401,14 @@
 
         const rows = Array.isArray(data.rows) ? data.rows : [];
         if (rows.length === 0) {
-          setOwnedState(list, `当前日期暂无自有产品排名 · ${platformName}`);
+          setOwnedState(list, `当前日期暂无自有产品排名 · ${platformName}`, platform);
           return;
         }
 
-        renderOwnedRows(list, rows, platformName);
+        setActiveUpdateTime(data.snapshots?.us_games || data.snapshots?.us_apps);
+        renderOwnedRows(list, rows, platform, platformName);
       } catch (error) {
-        setOwnedState(list, `自有产品排名 · ${platformName} 加载失败`);
+        setOwnedState(list, `自有产品排名 · ${platformName} 加载失败`, platform);
       }
     }
 

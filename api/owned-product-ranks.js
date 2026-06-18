@@ -122,7 +122,10 @@ function buildOwnedRows(products, platform, chartRowsByType) {
       url: sourceRow?.app_store_url || sourceRow?.play_store_url || "",
       ranks: {
         us_games: gameRow?.rank || null,
-        us_apps: appRow?.rank || null
+        us_apps: appRow?.rank || null,
+        us_category_1: null,
+        us_category_2: null,
+        us_category: null
       },
       missing_id: !appId
     };
