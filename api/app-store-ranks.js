@@ -1,4 +1,5 @@
 const CHART_TYPES = new Set(["us_games", "us_apps"]);
+const BEIJING_TIME_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 function getRequiredEnv(name) {
   const value = process.env[name];
@@ -13,13 +14,13 @@ function getDateRange(dateText) {
     return null;
   }
 
-  const start = new Date(`${dateText}T00:00:00.000Z`);
-  if (Number.isNaN(start.getTime())) {
+  const [year, month, day] = dateText.split("-").map(Number);
+  if (!year || !month || !day) {
     throw new Error("Invalid date parameter");
   }
 
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
+  const start = new Date(Date.UTC(year, month - 1, day) - BEIJING_TIME_OFFSET_MS);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
 
   return {
     start: start.toISOString(),
