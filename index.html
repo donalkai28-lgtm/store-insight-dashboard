@@ -1219,12 +1219,25 @@
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
     }
 
+    .event-card a {
+      color: inherit;
+      text-decoration: none;
+    }
+
     .event-image {
       aspect-ratio: 16 / 9;
       position: relative;
       background:
         radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.45), transparent 28%),
         linear-gradient(135deg, #bdddb8, #8fc18e);
+    }
+
+    .event-image img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .event-image::before {
@@ -1272,6 +1285,17 @@
       margin-top: 3px;
       color: rgba(23, 51, 31, 0.72);
       font-size: 12px;
+      font-weight: 700;
+    }
+
+    .event-empty {
+      grid-column: 1 / -1;
+      padding: 28px;
+      border-radius: 16px;
+      background: #eef8ed;
+      color: rgba(23, 51, 31, 0.72);
+      text-align: center;
+      font-size: 13px;
       font-weight: 700;
     }
 
@@ -1967,79 +1991,10 @@
       <section class="panel event-overview" aria-label="活动概览">
         <div class="event-head">
           <h2>Event概览 <span class="muted-platform">Google play</span></h2>
-          <span class="event-note">每张卡片代表一张商店活动图</span>
+          <span class="event-note">每日北京时间 00:20 更新</span>
         </div>
-        <div class="event-grid">
-          <article class="event-card">
-            <div class="event-image"><div class="event-image-label">图片A</div></div>
-            <div class="event-info">
-              <strong>HAPPY DAY</strong>
-              <span>活动时间：6.10-6.20</span>
-            </div>
-          </article>
-          <article class="event-card">
-            <div class="event-image"><div class="event-image-label">图片B</div></div>
-            <div class="event-info">
-              <strong>Summer Puzzle</strong>
-              <span>活动时间：6.12-6.25</span>
-            </div>
-          </article>
-          <article class="event-card">
-            <div class="event-image"><div class="event-image-label">图片C</div></div>
-            <div class="event-info">
-              <strong>Block Challenge</strong>
-              <span>活动时间：6.15-6.30</span>
-            </div>
-          </article>
-          <article class="event-card">
-            <div class="event-image"><div class="event-image-label">图片D</div></div>
-            <div class="event-info">
-              <strong>Weekend Boost</strong>
-              <span>活动时间：6.16-6.18</span>
-            </div>
-          </article>
-          <article class="event-card">
-            <div class="event-image"><div class="event-image-label">图片E</div></div>
-            <div class="event-info">
-              <strong>Color Festival</strong>
-              <span>活动时间：6.18-7.01</span>
-            </div>
-          </article>
-          <article class="event-card">
-            <div class="event-image"><div class="event-image-label">图片F</div></div>
-            <div class="event-info">
-              <strong>Farm Pass</strong>
-              <span>活动时间：6.20-7.05</span>
-            </div>
-          </article>
-          <article class="event-card">
-            <div class="event-image"><div class="event-image-label">图片G</div></div>
-            <div class="event-info">
-              <strong>Maze Sprint</strong>
-              <span>活动时间：6.21-6.28</span>
-            </div>
-          </article>
-          <article class="event-card">
-            <div class="event-image"><div class="event-image-label">图片H</div></div>
-            <div class="event-info">
-              <strong>Daily Reward</strong>
-              <span>活动时间：6.22-7.02</span>
-            </div>
-          </article>
-          <article class="event-card">
-            <div class="event-image"><div class="event-image-label">图片I</div></div>
-            <div class="event-info">
-              <strong>Word Hunt</strong>
-              <span>活动时间：6.24-7.08</span>
-            </div>
-          </article>
-          <article class="event-card">
-            <div class="event-image"><div class="event-image-label">图片J</div></div>
-            <div class="event-info">
-              <strong>Lucky Merge</strong>
-              <span>活动时间：6.25-7.10</span>
-            </div>
-          </article>
+        <div class="event-grid" id="googlePlayEventGrid">
+          <div class="market-state">正在加载 Google Play 活动...</div>
         </div>
       </section>
     </section>
@@ -2098,6 +2053,7 @@
     const googlePlayMarketList = document.querySelector("#googlePlayMarketList");
     const appStoreOwnedList = document.querySelector("#appStoreOwnedList");
     const googlePlayOwnedList = document.querySelector("#googlePlayOwnedList");
+    const googlePlayEventGrid = document.querySelector("#googlePlayEventGrid");
     const marketChartTypes = {
       "US游戏榜": "us_games",
       "US应用榜": "us_apps"
@@ -2133,6 +2089,10 @@
 
     const setOwnedState = (list, message, platform = "app_store") => {
       list.innerHTML = `${ownedHeadHtmlByPlatform[platform]}<div class="market-state">${message}</div>`;
+    };
+
+    const setEventState = (message) => {
+      googlePlayEventGrid.innerHTML = `<div class="event-empty">${message}</div>`;
     };
 
     const parseAppStoreSnapshotRow = (row) => {
@@ -2342,6 +2302,52 @@
       });
     };
 
+    const renderEventRows = (events) => {
+      googlePlayEventGrid.innerHTML = "";
+
+      events.forEach((event) => {
+        const card = document.createElement("article");
+        card.className = "event-card";
+
+        const cardLink = event.event_url ? document.createElement("a") : document.createElement("div");
+        if (event.event_url) {
+          cardLink.href = event.event_url;
+          cardLink.target = "_blank";
+          cardLink.rel = "noopener noreferrer";
+        }
+
+        const imageBox = document.createElement("div");
+        imageBox.className = "event-image";
+
+        if (event.image_url) {
+          const image = document.createElement("img");
+          image.src = event.image_url;
+          image.alt = `${event.event_title} event image`;
+          image.loading = "lazy";
+          imageBox.appendChild(image);
+        } else {
+          const label = document.createElement("div");
+          label.className = "event-image-label";
+          label.textContent = event.app_name || "Event";
+          imageBox.appendChild(label);
+        }
+
+        const info = document.createElement("div");
+        info.className = "event-info";
+
+        const title = document.createElement("strong");
+        title.textContent = event.event_title || "Untitled Event";
+
+        const time = document.createElement("span");
+        time.textContent = event.relative_end_time ? `${event.app_name} · ${event.relative_end_time}` : event.app_name;
+
+        info.append(title, time);
+        cardLink.append(imageBox, info);
+        card.appendChild(cardLink);
+        googlePlayEventGrid.appendChild(card);
+      });
+    };
+
     async function renderAppStoreChart(rankType = "US游戏榜") {
       const chartType = marketChartTypes[rankType] || marketChartTypes["US游戏榜"];
       const params = new URLSearchParams({
@@ -2440,6 +2446,32 @@
       }
     }
 
+    async function renderGooglePlayEvents() {
+      setEventState("正在加载 Google Play 活动...");
+
+      try {
+        const response = await fetch("/api/google-play-events");
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data.ok) {
+          throw new Error(data.error || "Unknown API error");
+        }
+
+        const rows = Array.isArray(data.rows) ? data.rows : [];
+        if (rows.length === 0) {
+          setEventState("当前暂无自有产品进行中的 Google Play 活动");
+          return;
+        }
+
+        renderEventRows(rows);
+      } catch (error) {
+        setEventState("Google Play 活动加载失败，请稍后重试");
+      }
+    }
+
     function renderStoreMarketCharts(rankType = "US游戏榜") {
       renderAppStoreChart(rankType);
       renderGooglePlayChart(rankType);
@@ -2456,6 +2488,7 @@
     }
 
     renderAllRankPanels("US游戏榜");
+    renderGooglePlayEvents();
 
     document.querySelectorAll(".range-group .filter[data-range]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -2514,7 +2547,9 @@
 
     const formatTrendDate = (dateText) => {
       const [, month, day] = dateText.split("-");
-      return `${month}月${day}日`;
+      const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+      const weekday = weekdays[new Date(`${dateText}T00:00:00.000Z`).getUTCDay()];
+      return `${month}月${day}日 ${weekday}`;
     };
 
     const buildSmoothPath = (points) => {

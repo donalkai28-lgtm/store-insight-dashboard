@@ -34,6 +34,14 @@ begin
   ) then
     perform cron.unschedule('collect-google-play-scheduled');
   end if;
+
+  if exists (
+    select 1
+    from cron.job
+    where jobname = 'collect-google-play-events-daily'
+  ) then
+    perform cron.unschedule('collect-google-play-events-daily');
+  end if;
 end $$;
 
 select cron.schedule(
@@ -54,6 +62,18 @@ select cron.schedule(
   $$
   select net.http_get(
     url := 'https://store-insight-dashboard.vercel.app/api/collect-google-play?secret=store-insight-cron-2026-strong-secret',
+    headers := '{"User-Agent":"Supabase Cron"}'::jsonb,
+    timeout_milliseconds := 30000
+  ) as request_id;
+  $$
+);
+
+select cron.schedule(
+  'collect-google-play-events-daily',
+  '20 16 * * *',
+  $$
+  select net.http_get(
+    url := 'https://store-insight-dashboard.vercel.app/api/collect-google-play-events?secret=store-insight-cron-2026-strong-secret',
     headers := '{"User-Agent":"Supabase Cron"}'::jsonb,
     timeout_milliseconds := 30000
   ) as request_id;
