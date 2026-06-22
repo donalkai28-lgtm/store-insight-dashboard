@@ -121,7 +121,7 @@
 
     .toolbar-note {
       color: var(--muted);
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 700;
       text-align: right;
     }
@@ -522,22 +522,23 @@
     .market-rank {
       font-weight: 900;
       font-style: italic;
+      font-size: 14px;
       text-align: center;
     }
 
     .market-row:nth-child(1) .market-rank {
       color: #ff7b7b;
-      font-size: 20px;
+      font-size: 17px;
     }
 
     .market-row:nth-child(2) .market-rank {
       color: #ffae55;
-      font-size: 19px;
+      font-size: 17px;
     }
 
     .market-row:nth-child(3) .market-rank {
       color: #ffd75e;
-      font-size: 18px;
+      font-size: 17px;
     }
 
     .app-icon {
@@ -671,6 +672,11 @@
       color: #ff4e65;
       font-size: 11px;
       font-weight: 900;
+    }
+
+    .market-change-arrow {
+      font-size: 0.6em;
+      line-height: 1;
     }
 
     .market-change.down {
@@ -2053,11 +2059,11 @@
       }
 
       if (rankChange > 0) {
-        return { text: `▲ ${rankChange}`, className: "market-change" };
+        return { arrow: "▲", text: rankChange, className: "market-change" };
       }
 
       if (rankChange < 0) {
-        return { text: `▼ ${Math.abs(rankChange)}`, className: "market-change down" };
+        return { arrow: "▼", text: Math.abs(rankChange), className: "market-change down" };
       }
 
       return { text: "-", className: "market-change flat" };
@@ -2188,7 +2194,16 @@
         const changeView = getRankChangeView(app.rankChange);
         const change = document.createElement("span");
         change.className = changeView.className;
-        change.textContent = changeView.text;
+        if (changeView.arrow) {
+          const arrow = document.createElement("span");
+          arrow.className = "market-change-arrow";
+          arrow.textContent = changeView.arrow;
+          const value = document.createElement("span");
+          value.textContent = changeView.text;
+          change.append(arrow, value);
+        } else {
+          change.textContent = changeView.text;
+        }
 
         row.append(rank, icon, main, change);
         list.appendChild(row);
