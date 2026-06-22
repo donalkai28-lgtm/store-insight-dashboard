@@ -115,10 +115,6 @@ async function getPreviousRows(chartType, beijingDate) {
 }
 
 function attachRankChanges(rows, previousRows) {
-  if (rows.some((row) => Object.prototype.hasOwnProperty.call(row, "rank_change"))) {
-    return rows;
-  }
-
   const previousRankByAppId = new Map(previousRows.map((row) => [row.app_id, row.rank]));
 
   return rows.map((row) => {
