@@ -1385,12 +1385,12 @@
       <div class="toolbar-note">
         双端商店榜单和自有产品榜单 均为美国榜单数据<br>
         数据更新节点：
-        <span class="update-time" data-update-hour="0">00:10</span>、
         <span class="update-time" data-update-hour="5">05:10</span>、
         <span class="update-time" data-update-hour="9">09:10</span>、
         <span class="update-time" data-update-hour="13">13:10</span>、
         <span class="update-time" data-update-hour="17">17:10</span>、
-        <span class="update-time" data-update-hour="21">21:10</span>
+        <span class="update-time" data-update-hour="21">21:10</span>、
+        <span class="update-time" data-update-hour="23">23:50</span>
       </div>
     </section>
 
@@ -2654,7 +2654,7 @@
       const source = getSelectedTrendSource();
       const color = source === "ios" ? "#ff6f87" : "#be36e8";
 
-      setTrendState("正在加载 21:10 天级趋势...");
+      setTrendState("正在加载 23:50 天级趋势...");
 
       let apiSeries = [];
       try {
@@ -2683,7 +2683,7 @@
         .filter((item) => item.rows.length > 0);
 
       if (visibleSeries.length === 0) {
-        setTrendState("当前产品暂无 21:10 趋势数据");
+        setTrendState("当前产品暂无 23:50 趋势数据");
         return;
       }
 

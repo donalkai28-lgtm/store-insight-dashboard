@@ -134,7 +134,7 @@ module.exports = async function handler(req, res) {
         chart_type: `eq.${item.chartType}`,
         app_id: `eq.${appId}`,
         beijing_date: `gte.${startDate}`,
-        beijing_hour: "eq.21",
+        is_final_snapshot: "eq.true",
         order: "beijing_date.asc"
       });
       params.append("beijing_date", `lte.${endDate}`);

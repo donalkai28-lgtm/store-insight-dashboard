@@ -38,6 +38,22 @@ begin
   if exists (
     select 1
     from cron.job
+    where jobname = 'collect-app-store-final-daily'
+  ) then
+    perform cron.unschedule('collect-app-store-final-daily');
+  end if;
+
+  if exists (
+    select 1
+    from cron.job
+    where jobname = 'collect-google-play-final-daily'
+  ) then
+    perform cron.unschedule('collect-google-play-final-daily');
+  end if;
+
+  if exists (
+    select 1
+    from cron.job
     where jobname = 'collect-google-play-events-daily'
   ) then
     perform cron.unschedule('collect-google-play-events-daily');
@@ -46,7 +62,7 @@ end $$;
 
 select cron.schedule(
   'collect-app-store-scheduled',
-  '10 1,5,9,13,16,21 * * *',
+  '10 1,5,9,13,21 * * *',
   $$
   select net.http_get(
     url := 'https://store-insight-dashboard.vercel.app/api/collect-app-store?secret=store-insight-cron-2026-strong-secret',
@@ -58,7 +74,31 @@ select cron.schedule(
 
 select cron.schedule(
   'collect-google-play-scheduled',
-  '10 1,5,9,13,16,21 * * *',
+  '10 1,5,9,13,21 * * *',
+  $$
+  select net.http_get(
+    url := 'https://store-insight-dashboard.vercel.app/api/collect-google-play?secret=store-insight-cron-2026-strong-secret',
+    headers := '{"User-Agent":"Supabase Cron"}'::jsonb,
+    timeout_milliseconds := 30000
+  ) as request_id;
+  $$
+);
+
+select cron.schedule(
+  'collect-app-store-final-daily',
+  '50 15 * * *',
+  $$
+  select net.http_get(
+    url := 'https://store-insight-dashboard.vercel.app/api/collect-app-store?secret=store-insight-cron-2026-strong-secret',
+    headers := '{"User-Agent":"Supabase Cron"}'::jsonb,
+    timeout_milliseconds := 30000
+  ) as request_id;
+  $$
+);
+
+select cron.schedule(
+  'collect-google-play-final-daily',
+  '50 15 * * *',
   $$
   select net.http_get(
     url := 'https://store-insight-dashboard.vercel.app/api/collect-google-play?secret=store-insight-cron-2026-strong-secret',

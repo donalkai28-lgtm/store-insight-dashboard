@@ -28,6 +28,15 @@ function getDateRange(dateText) {
   };
 }
 
+function getPreviousBeijingDate(dateText) {
+  const [year, month, day] = dateText.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day - 1));
+  const previousYear = date.getUTCFullYear();
+  const previousMonth = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const previousDay = String(date.getUTCDate()).padStart(2, "0");
+  return `${previousYear}-${previousMonth}-${previousDay}`;
+}
+
 async function supabaseGet(path) {
   const supabaseUrl = getRequiredEnv("SUPABASE_URL").replace(/\/$/, "");
   const serviceKey = getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY");
@@ -59,7 +68,7 @@ async function supabaseGet(path) {
 
 async function getLatestRows(chartType, dateText) {
   const params = new URLSearchParams({
-    select: "snapshot_at,rank,app_id,app_name,developer_name,icon_url,play_store_url,score,previous_rank,rank_change",
+    select: "snapshot_at,beijing_date,rank,app_id,app_name,developer_name,icon_url,play_store_url,score,previous_rank,rank_change",
     country: "eq.us",
     chart_type: `eq.${chartType}`,
     order: "snapshot_at.desc,rank.asc",
@@ -81,8 +90,8 @@ async function getLatestRows(chartType, dateText) {
   return rows.filter((row) => row.snapshot_at === latestSnapshotAt).sort((a, b) => a.rank - b.rank);
 }
 
-async function getPreviousRows(chartType, snapshotAt) {
-  if (!snapshotAt) {
+async function getPreviousRows(chartType, beijingDate) {
+  if (!beijingDate) {
     return [];
   }
 
@@ -90,7 +99,8 @@ async function getPreviousRows(chartType, snapshotAt) {
     select: "snapshot_at,rank,app_id",
     country: "eq.us",
     chart_type: `eq.${chartType}`,
-    snapshot_at: `lt.${snapshotAt}`,
+    beijing_date: `eq.${getPreviousBeijingDate(beijingDate)}`,
+    is_final_snapshot: "eq.true",
     order: "snapshot_at.desc,rank.asc",
     limit: "100"
   });
@@ -138,7 +148,7 @@ module.exports = async function handler(req, res) {
   try {
     const rows = await getLatestRows(chartType, req.query?.date);
     const snapshotAt = rows[0]?.snapshot_at || null;
-    const previousRows = await getPreviousRows(chartType, snapshotAt);
+    const previousRows = await getPreviousRows(chartType, rows[0]?.beijing_date);
     const previousSnapshotAt = previousRows[0]?.snapshot_at || null;
 
     return res.status(200).json({

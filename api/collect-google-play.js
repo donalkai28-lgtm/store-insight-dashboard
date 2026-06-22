@@ -24,9 +24,17 @@ const CHARTS = [
   }
 ];
 const BEIJING_TIME_OFFSET_MS = 8 * 60 * 60 * 1000;
-const SCHEDULED_BEIJING_HOURS = new Set([0, 5, 9, 13, 17, 21]);
-const COLLECTION_MINUTE = 10;
+const SCHEDULED_BEIJING_TIMES = [
+  { hour: 5, minute: 10 },
+  { hour: 9, minute: 10 },
+  { hour: 13, minute: 10 },
+  { hour: 17, minute: 10 },
+  { hour: 21, minute: 10 },
+  { hour: 23, minute: 50 }
+];
 const COLLECTION_WINDOW_MINUTES = 30;
+const FINAL_SNAPSHOT_HOUR = 23;
+const FINAL_SNAPSHOT_MINUTE = 50;
 const SNAPSHOT_TABLE = "google_play_rank_snapshots";
 const PROFILE_TABLE = "owned_product_profiles";
 
@@ -55,23 +63,44 @@ function getBeijingParts(date) {
 
 function getScheduledSnapshot() {
   const parts = getBeijingParts(new Date());
-  const inCollectionWindow =
-    parts.minute >= COLLECTION_MINUTE &&
-    parts.minute < COLLECTION_MINUTE + COLLECTION_WINDOW_MINUTES;
+  const currentMinuteOfDay = parts.hour * 60 + parts.minute;
+  const matchedSchedule = SCHEDULED_BEIJING_TIMES.map((schedule) => ({
+    ...schedule,
+    startMinuteOfDay: schedule.hour * 60 + schedule.minute
+  })).find((schedule) => {
+    const endMinuteOfDay = schedule.startMinuteOfDay + COLLECTION_WINDOW_MINUTES;
+    if (endMinuteOfDay <= 24 * 60) {
+      return currentMinuteOfDay >= schedule.startMinuteOfDay && currentMinuteOfDay < endMinuteOfDay;
+    }
+    return currentMinuteOfDay >= schedule.startMinuteOfDay || currentMinuteOfDay < endMinuteOfDay - 24 * 60;
+  });
 
-  if (!SCHEDULED_BEIJING_HOURS.has(parts.hour) || !inCollectionWindow) {
+  if (!matchedSchedule) {
     return null;
   }
 
-  const beijingDate = `${parts.year}-${padDatePart(parts.month)}-${padDatePart(parts.day)}`;
-  const snapshotAt = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour) - BEIJING_TIME_OFFSET_MS);
+  const scheduleDayOffset = currentMinuteOfDay < matchedSchedule.startMinuteOfDay ? -1 : 0;
+  const scheduleDate = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + scheduleDayOffset));
+  const scheduleYear = scheduleDate.getUTCFullYear();
+  const scheduleMonth = scheduleDate.getUTCMonth() + 1;
+  const scheduleDay = scheduleDate.getUTCDate();
+  const beijingDate = `${scheduleYear}-${padDatePart(scheduleMonth)}-${padDatePart(scheduleDay)}`;
+  const snapshotAt = new Date(
+    Date.UTC(scheduleYear, scheduleMonth - 1, scheduleDay, matchedSchedule.hour, matchedSchedule.minute) - BEIJING_TIME_OFFSET_MS
+  );
 
   return {
     snapshotAt: snapshotAt.toISOString(),
     beijingDate,
-    beijingHour: parts.hour,
-    isFinalSnapshot: parts.hour === 21
+    beijingHour: matchedSchedule.hour,
+    isFinalSnapshot: matchedSchedule.hour === FINAL_SNAPSHOT_HOUR && matchedSchedule.minute === FINAL_SNAPSHOT_MINUTE
   };
+}
+
+function getPreviousBeijingDate(dateText) {
+  const [year, month, day] = dateText.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day - 1));
+  return `${date.getUTCFullYear()}-${padDatePart(date.getUTCMonth() + 1)}-${padDatePart(date.getUTCDate())}`;
 }
 
 function isAuthorized(req) {
@@ -232,12 +261,13 @@ async function upsertOwnedProductProfiles(rows) {
   });
 }
 
-async function getPreviousRows(chartType, snapshotAt) {
+async function getPreviousRows(chartType, currentBeijingDate) {
   const params = new URLSearchParams({
     select: "snapshot_at,rank,app_id",
     country: "eq.us",
     chart_type: `eq.${chartType}`,
-    snapshot_at: `lt.${snapshotAt}`,
+    beijing_date: `eq.${getPreviousBeijingDate(currentBeijingDate)}`,
+    is_final_snapshot: "eq.true",
     order: "snapshot_at.desc,rank.asc",
     limit: "100"
   });
@@ -313,7 +343,7 @@ module.exports = async function handler(req, res) {
   if (!snapshot) {
     return res.status(409).json({
       ok: false,
-      error: "Collector can only run at Beijing time 00:10, 05:10, 09:10, 13:10, 17:10, 21:10"
+      error: "Collector can only run at Beijing time 05:10, 09:10, 13:10, 17:10, 21:10, 23:50"
     });
   }
 
@@ -322,7 +352,7 @@ module.exports = async function handler(req, res) {
 
     for (const chart of CHARTS) {
       const rows = await fetchChart(chart, snapshot);
-      const previousRows = await getPreviousRows(chart.chart_type, snapshot.snapshotAt);
+      const previousRows = await getPreviousRows(chart.chart_type, snapshot.beijingDate);
       const rowsWithChanges = attachRankChanges(rows, previousRows);
       await replaceChartSnapshot(chart.chart_type, snapshot.snapshotAt, rowsWithChanges);
       results.push({
