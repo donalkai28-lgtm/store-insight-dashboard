@@ -519,6 +519,12 @@
       border: 1px solid #e5e8ed;
     }
 
+    .app-icon.unlisted-icon {
+      color: #64748b;
+      background: linear-gradient(135deg, #e5e7eb, #cbd5e1) !important;
+      border: 1px solid #cbd5e1;
+    }
+
     .market-main {
       min-width: 0;
     }
@@ -560,6 +566,12 @@
       border-radius: 8px;
       object-fit: cover;
       box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+    }
+
+    .market-icon-img.unlisted-icon {
+      filter: grayscale(1);
+      opacity: 0.58;
+      background: #e5e7eb;
     }
 
     .market-state {
@@ -2538,8 +2550,14 @@
         } else {
           icon = document.createElement("span");
           icon.className = "app-icon";
-          icon.style.background = "linear-gradient(135deg, #7b61ff, #31c6ff)";
+          if (!product.is_unlisted) {
+            icon.style.background = "linear-gradient(135deg, #7b61ff, #31c6ff)";
+          }
           icon.textContent = getProductInitials(product.name);
+        }
+
+        if (product.is_unlisted) {
+          icon.classList.add("unlisted-icon");
         }
 
         const main = document.createElement("div");
