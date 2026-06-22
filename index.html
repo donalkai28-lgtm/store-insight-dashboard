@@ -241,7 +241,7 @@
 
     .rank-calendar-actions {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       margin-top: 10px;
     }
 
@@ -1409,6 +1409,14 @@
       font-weight: 900;
     }
 
+    .event-info .event-end-time.warning {
+      color: #d97706;
+    }
+
+    .event-info .event-end-time.safe {
+      color: #087843;
+    }
+
     .event-info span {
       color: rgba(23, 51, 31, 0.72);
       font-size: 16px;
@@ -1491,7 +1499,6 @@
             </div>
             <div class="rank-calendar-grid"></div>
             <div class="rank-calendar-actions">
-              <button type="button" class="rank-calendar-latest">最近有数据</button>
               <button type="button" class="rank-calendar-today">今天</button>
             </div>
           </div>
@@ -2168,7 +2175,6 @@
     const rankCalendarGrid = document.querySelector(".rank-calendar-grid");
     const rankCalendarPrev = document.querySelector(".rank-calendar-prev");
     const rankCalendarNext = document.querySelector(".rank-calendar-next");
-    const rankCalendarLatest = document.querySelector(".rank-calendar-latest");
     const rankCalendarToday = document.querySelector(".rank-calendar-today");
     let availableRankDates = new Set();
     let latestAvailableRankDate = "";
@@ -2302,11 +2308,6 @@
     rankCalendarNext.addEventListener("click", () => {
       calendarCursorDate.setMonth(calendarCursorDate.getMonth() + 1);
       renderRankCalendar();
-    });
-
-    rankCalendarLatest.addEventListener("click", () => {
-      selectRankDate(latestAvailableRankDate);
-      closeRankCalendar();
     });
 
     rankCalendarToday.addEventListener("click", () => {
@@ -2577,6 +2578,25 @@
       });
     };
 
+    const getEventEndTimeClass = (relativeEndTime = "") => {
+      const match = relativeEndTime.match(/Ends in\s+(\d+)\s+(hour|hours|day|days)/i);
+      if (!match) {
+        return "";
+      }
+
+      const value = Number(match[1]);
+      const unit = match[2].toLowerCase();
+      const remainingDays = unit.startsWith("hour") ? value / 24 : value;
+
+      if (remainingDays > 4) {
+        return "safe";
+      }
+      if (remainingDays > 2) {
+        return "warning";
+      }
+      return "";
+    };
+
     const renderEventRows = (events) => {
       googlePlayEventGrid.innerHTML = "";
 
@@ -2624,7 +2644,7 @@
 
         if (event.relative_end_time) {
           const time = document.createElement("span");
-          time.className = "event-end-time";
+          time.className = ["event-end-time", getEventEndTimeClass(event.relative_end_time)].filter(Boolean).join(" ");
           time.textContent = event.relative_end_time;
           meta.appendChild(time);
         }
