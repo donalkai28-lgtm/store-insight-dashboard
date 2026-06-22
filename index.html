@@ -514,6 +514,11 @@
       color: #0c1424;
     }
 
+    .market-row.owned-market-row {
+      background: linear-gradient(90deg, rgba(255, 126, 158, 0.14), rgba(255, 255, 255, 0));
+      box-shadow: inset 3px 0 0 rgba(255, 126, 158, 0.72);
+    }
+
     .market-rank {
       font-weight: 900;
       font-style: italic;
@@ -593,6 +598,17 @@
       color: #1d72ff;
       text-decoration: underline;
       text-underline-offset: 3px;
+    }
+
+    .owned-market-badge {
+      flex: 0 0 auto;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #ff7e9e;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 900;
+      line-height: 1.2;
     }
 
     .market-icon-img {
@@ -1796,6 +1812,8 @@
     let availableRankDates = new Set();
     let latestAvailableRankDate = "";
     let calendarCursorDate = new Date();
+    let ownedAppStoreIds = new Set();
+    let ownedGooglePlayPackages = new Set();
 
     const getTodayDateValue = () => {
       const today = new Date();
@@ -1909,6 +1927,23 @@
       }
     };
 
+    const loadOwnedProductMarkers = async () => {
+      try {
+        const response = await fetch("/owned-products.config.json");
+        const config = await response.json();
+        const products = Array.isArray(config.products) ? config.products : [];
+        ownedAppStoreIds = new Set(products
+          .filter((product) => product.enabled !== false && product.app_store_id)
+          .map((product) => String(product.app_store_id)));
+        ownedGooglePlayPackages = new Set(products
+          .filter((product) => product.enabled !== false && product.google_play_package)
+          .map((product) => String(product.google_play_package)));
+      } catch (error) {
+        ownedAppStoreIds = new Set();
+        ownedGooglePlayPackages = new Set();
+      }
+    };
+
     rankDateControl.addEventListener("click", () => {
       if (rankCalendar.hidden) {
         openRankCalendar();
@@ -1990,6 +2025,7 @@
 
     const parseAppStoreSnapshotRow = (row) => {
       return {
+        appId: row.app_id || "",
         rank: row.rank,
         name: row.app_name || "Unknown App",
         developer: row.developer_name || "Unknown Developer",
@@ -2001,6 +2037,7 @@
 
     const parseGooglePlaySnapshotRow = (row) => {
       return {
+        appId: row.app_id || "",
         rank: row.rank,
         name: row.app_name || "Unknown App",
         developer: row.developer_name || "Unknown Developer",
@@ -2092,12 +2129,25 @@
       });
     };
 
-    const renderMarketRows = (list, apps) => {
+    const isOwnedMarketApp = (app, platform) => {
+      if (!app.appId) {
+        return false;
+      }
+      return platform === "app_store"
+        ? ownedAppStoreIds.has(String(app.appId))
+        : ownedGooglePlayPackages.has(String(app.appId));
+    };
+
+    const renderMarketRows = (list, apps, platform) => {
       list.innerHTML = "";
 
       apps.slice(0, 100).forEach((app) => {
+        const isOwnedApp = isOwnedMarketApp(app, platform);
         const row = document.createElement("div");
         row.className = "market-row";
+        if (isOwnedApp) {
+          row.classList.add("owned-market-row");
+        }
 
         const rank = document.createElement("span");
         rank.className = "market-rank";
@@ -2121,6 +2171,13 @@
         link.rel = "noopener noreferrer";
         link.textContent = app.name;
         title.appendChild(link);
+
+        if (isOwnedApp) {
+          const ownedBadge = document.createElement("span");
+          ownedBadge.className = "owned-market-badge";
+          ownedBadge.textContent = "自有";
+          title.appendChild(ownedBadge);
+        }
 
         const meta = document.createElement("div");
         meta.className = "market-meta";
@@ -2306,7 +2363,7 @@
         }
 
         setActiveUpdateTime(data.snapshot_at);
-        renderMarketRows(appStoreMarketList, rows.map(parseAppStoreSnapshotRow));
+        renderMarketRows(appStoreMarketList, rows.map(parseAppStoreSnapshotRow), "app_store");
       } catch (error) {
         setAppStoreState("App Store 榜单加载失败，请稍后重试");
       }
@@ -2339,7 +2396,7 @@
         }
 
         setActiveUpdateTime(data.snapshot_at);
-        renderMarketRows(googlePlayMarketList, rows.map(parseGooglePlaySnapshotRow));
+        renderMarketRows(googlePlayMarketList, rows.map(parseGooglePlaySnapshotRow), "google_play");
       } catch (error) {
         setGooglePlayState("Google Play 榜单加载失败，请稍后重试");
       }
@@ -2422,6 +2479,7 @@
       globalRefresh.classList.add("is-loading");
       try {
         await loadAvailableRankDates();
+        await loadOwnedProductMarkers();
         renderRankCalendar();
         renderAllRankPanels(document.querySelector(".tab.active")?.dataset.rankType || "US游戏榜");
         drawTrendChart();
@@ -2434,7 +2492,7 @@
     }
 
     async function initializeDashboard() {
-      await loadAvailableRankDates();
+      await Promise.all([loadAvailableRankDates(), loadOwnedProductMarkers()]);
       const today = getTodayDateValue();
       const initialDate = availableRankDates.has(today) ? today : latestAvailableRankDate || today;
       rankDatePicker.value = initialDate;
