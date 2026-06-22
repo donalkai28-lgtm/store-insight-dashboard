@@ -50,6 +50,41 @@
       padding: 16px clamp(28px, 3vw, 56px) 44px;
     }
 
+    .global-refresh {
+      position: fixed;
+      top: 18px;
+      right: 22px;
+      z-index: 30;
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(23, 32, 51, 0.08);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.56);
+      color: #475569;
+      cursor: pointer;
+      opacity: 0.42;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+      transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease;
+    }
+
+    .global-refresh:hover {
+      opacity: 0.86;
+      background: rgba(255, 255, 255, 0.9);
+      transform: rotate(18deg);
+    }
+
+    .global-refresh.is-loading {
+      opacity: 0.72;
+      pointer-events: none;
+      animation: refreshSpin 0.9s linear infinite;
+    }
+
+    @keyframes refreshSpin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .hero {
       margin-bottom: 10px;
     }
@@ -1478,6 +1513,7 @@
 </head>
 <body>
   <main class="app">
+    <button class="global-refresh" type="button" aria-label="刷新全部数据" title="刷新全部数据">↻</button>
     <section class="hero">
       <div>
         <h1>商店速览</h1>
@@ -1536,114 +1572,7 @@
             <span class="platform" style="color: var(--ios)"><i class="dot"></i><span class="rank-date">2026-06-16</span></span>
           </div>
           <div class="market-list" id="appStoreMarketList">
-            <div class="market-row">
-              <span class="market-rank">1</span>
-              <span class="app-icon" style="background: linear-gradient(135deg, #1d72ff, #0857df)">P+</span>
-              <div class="market-main">
-                <div class="market-title"><span>Paramount+</span><span class="badge ad">Ad</span><span class="badge pay">$</span></div>
-                <div class="market-meta">娱乐 · 1名 CBS Interactive</div>
-              </div>
-              <span class="market-change flat">-</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">2</span>
-              <span class="app-icon" style="background: #111">PC</span>
-              <div class="market-main">
-                <div class="market-title"><span>Peacock TV: Stream TV & Movies</span><span class="badge ad">Ad</span><span class="badge pay">$</span></div>
-                <div class="market-meta">娱乐 · 2名 Peacock TV LLC</div>
-              </div>
-              <span class="market-change">▲ 1</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">3</span>
-              <span class="app-icon light-icon">FOX</span>
-              <div class="market-main">
-                <div class="market-title"><span>FOX One: Live News, Sports, TV</span><span class="badge pay">$</span></div>
-                <div class="market-meta">娱乐 · 3名 Fox Digital Services, LLC</div>
-              </div>
-              <span class="market-change">▲ 1</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">4</span>
-              <span class="app-icon" style="background: #00d38a; color: #08251b">Kalshi</span>
-              <div class="market-main">
-                <div class="market-title"><span>Kalshi: Trade the Cup</span><span class="badge ad">Ad</span></div>
-                <div class="market-meta">财务 · 1名 KalshiEX LLC</div>
-              </div>
-              <span class="market-change down">▼ 2</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">5</span>
-              <span class="app-icon light-icon">GPT</span>
-              <div class="market-main">
-                <div class="market-title"><span>ChatGPT</span><span class="badge ad">Ad</span><span class="badge pay">$</span></div>
-                <div class="market-meta">效率 · 1名 OpenAI OpCo, LLC</div>
-              </div>
-              <span class="market-change flat">-</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">6</span>
-              <span class="app-icon" style="background: #173bda">FWC</span>
-              <div class="market-main">
-                <div class="market-title"><span>FWC2026 Mobile Tickets</span></div>
-                <div class="market-meta">体育 · 1名 FIFA</div>
-              </div>
-              <span class="market-change">▲ 8</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">7</span>
-              <span class="app-icon" style="background: linear-gradient(135deg, #30165f, #d23893)">NG</span>
-              <div class="market-main">
-                <div class="market-title"><span>Netflix Game Controller</span></div>
-                <div class="market-meta">娱乐 · 4名 Netflix, Inc.</div>
-              </div>
-              <span class="market-change flat">-</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">8</span>
-              <span class="app-icon" style="background: #050505">FIFA</span>
-              <div class="market-main">
-                <div class="market-title"><span>FIFA World Cup 2026™</span></div>
-                <div class="market-meta">体育 · 2名 FIFA</div>
-              </div>
-              <span class="market-change flat">-</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">9</span>
-              <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BO</span>
-              <div class="market-main">
-                <div class="market-title"><span>Block Out! - Color Sort Puzzle</span><span class="badge pay">$</span></div>
-                <div class="market-meta">益智解谜 · 1名 Grand Games A.Ş.</div>
-              </div>
-              <span class="market-change flat">-</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">10</span>
-              <span class="app-icon" style="background: #2765f7">PM</span>
-              <div class="market-main">
-                <div class="market-title"><span>Polymarket</span><span class="badge ad">Ad</span></div>
-                <div class="market-meta">财务 · 2名 Polymarket</div>
-              </div>
-              <span class="market-change down">▼ 4</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">11</span>
-              <span class="app-icon" style="background: linear-gradient(135deg, #ffe1a5, #45c2d5)">LI</span>
-              <div class="market-main">
-                <div class="market-title"><span>Love Island USA</span></div>
-                <div class="market-meta">娱乐 · 5名 ITV America Inc.</div>
-              </div>
-              <span class="market-change">▲ 7</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">12</span>
-              <span class="app-icon" style="background: #ff5b36">YT</span>
-              <div class="market-main">
-                <div class="market-title"><span>YouTube</span></div>
-                <div class="market-meta">摄影与录像 · 1名 Google LLC</div>
-              </div>
-              <span class="market-change down">▼ 1</span>
-            </div>
+            <div class="market-state">正在加载 App Store 榜单...</div>
           </div>
         </article>
 
@@ -1653,114 +1582,7 @@
             <span class="platform" style="color: var(--gp)"><i class="dot"></i><span class="rank-date">2026-06-16</span></span>
           </div>
           <div class="market-list" id="googlePlayMarketList">
-            <div class="market-row">
-              <span class="market-rank">1</span>
-              <span class="app-icon" style="background: #111">Chat</span>
-              <div class="market-main">
-                <div class="market-title"><span>ChatGPT</span><span class="badge ad">Ad</span></div>
-                <div class="market-meta">效率 · 1名 OpenAI</div>
-              </div>
-              <span class="market-change">▲ 3</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">2</span>
-              <span class="app-icon" style="background: #ff2d55">TT</span>
-              <div class="market-main">
-                <div class="market-title"><span>TikTok</span></div>
-                <div class="market-meta">娱乐 · 1名 TikTok Pte. Ltd.</div>
-              </div>
-              <span class="market-change flat">-</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">3</span>
-              <span class="app-icon" style="background: #2765f7">PM</span>
-              <div class="market-main">
-                <div class="market-title"><span>Polymarket</span><span class="badge ad">Ad</span></div>
-                <div class="market-meta">财务 · 1名 Polymarket</div>
-              </div>
-              <span class="market-change">▲ 4</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">4</span>
-              <span class="app-icon" style="background: #00d38a; color: #08251b">Kalshi</span>
-              <div class="market-main">
-                <div class="market-title"><span>Kalshi: Trade the Cup</span><span class="badge ad">Ad</span></div>
-                <div class="market-meta">财务 · 2名 KalshiEX LLC</div>
-              </div>
-              <span class="market-change down">▼ 1</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">5</span>
-              <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BO</span>
-              <div class="market-main">
-                <div class="market-title"><span>Block Out! - Color Sort Puzzle</span><span class="badge pay">$</span></div>
-                <div class="market-meta">益智解谜 · 1名 Grand Games A.Ş.</div>
-              </div>
-              <span class="market-change">▲ 6</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">6</span>
-              <span class="app-icon" style="background: #1d72ff">P+</span>
-              <div class="market-main">
-                <div class="market-title"><span>Paramount+</span><span class="badge ad">Ad</span></div>
-                <div class="market-meta">娱乐 · 2名 CBS Interactive</div>
-              </div>
-              <span class="market-change down">▼ 2</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">7</span>
-              <span class="app-icon" style="background: #0bb050">SP</span>
-              <div class="market-main">
-                <div class="market-title"><span>Spotify: Music and Podcasts</span></div>
-                <div class="market-meta">音乐与音频 · 1名 Spotify AB</div>
-              </div>
-              <span class="market-change flat">-</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">8</span>
-              <span class="app-icon" style="background: #173bda">FWC</span>
-              <div class="market-main">
-                <div class="market-title"><span>FWC2026 Mobile Tickets</span></div>
-                <div class="market-meta">体育 · 1名 FIFA</div>
-              </div>
-              <span class="market-change">▲ 5</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">9</span>
-              <span class="app-icon light-icon">FOX</span>
-              <div class="market-main">
-                <div class="market-title"><span>FOX One: Live News, Sports, TV</span></div>
-                <div class="market-meta">娱乐 · 4名 Fox Digital Services</div>
-              </div>
-              <span class="market-change down">▼ 3</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">10</span>
-              <span class="app-icon" style="background: linear-gradient(135deg, #30165f, #d23893)">NG</span>
-              <div class="market-main">
-                <div class="market-title"><span>Netflix Game Controller</span></div>
-                <div class="market-meta">娱乐 · 5名 Netflix, Inc.</div>
-              </div>
-              <span class="market-change flat">-</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">11</span>
-              <span class="app-icon" style="background: #34a853">GM</span>
-              <div class="market-main">
-                <div class="market-title"><span>Google Maps</span></div>
-                <div class="market-meta">旅游与本地 · 1名 Google LLC</div>
-              </div>
-              <span class="market-change">▲ 2</span>
-            </div>
-            <div class="market-row">
-              <span class="market-rank">12</span>
-              <span class="app-icon" style="background: #00b8ff">SC</span>
-              <div class="market-main">
-                <div class="market-title"><span>Snapchat</span></div>
-                <div class="market-meta">社交 · 1名 Snap Inc</div>
-              </div>
-              <span class="market-change down">▼ 5</span>
-            </div>
+            <div class="market-state">正在加载 Google Play 榜单...</div>
           </div>
         </article>
 
@@ -1777,116 +1599,7 @@
               <span>US分类榜1</span>
               <span>US分类榜2</span>
             </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BC</span>
-              <div class="market-main">
-                <div class="market-title"><span>Block Crush</span></div>
-                <div class="market-meta">Grand Games · 益智解谜</div>
-              </div>
-              <span class="rank-value good">15</span>
-              <span class="rank-value">50</span>
-              <span class="rank-value">400</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #7b61ff, #31c6ff)">TS</span>
-              <div class="market-main">
-                <div class="market-title"><span>Tile Sort Journey</span></div>
-                <div class="market-meta">Self Studio · 休闲</div>
-              </div>
-              <span class="rank-value hot">2</span>
-              <span class="rank-value good">8</span>
-              <span class="rank-value">33</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #ff5f7e, #ffc15a)">MC</span>
-              <div class="market-main">
-                <div class="market-title"><span>Merge Cafe</span></div>
-                <div class="market-meta">Self Studio · 模拟经营</div>
-              </div>
-              <span class="rank-value">45</span>
-              <span class="rank-value">126</span>
-              <span class="rank-value empty">-</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #19c37d, #087843)">WF</span>
-              <div class="market-main">
-                <div class="market-title"><span>Word Forest</span></div>
-                <div class="market-meta">Self Studio · 文字</div>
-              </div>
-              <span class="rank-value good">18</span>
-              <span class="rank-value">79</span>
-              <span class="rank-value">286</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #151a2d, #5964ff)">BM</span>
-              <div class="market-main">
-                <div class="market-title"><span>Block Master 3D</span></div>
-                <div class="market-meta">Self Studio · 益智解谜</div>
-              </div>
-              <span class="rank-value">63</span>
-              <span class="rank-value">142</span>
-              <span class="rank-value empty">-</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #ff7a00, #ff2d55)">FB</span>
-              <div class="market-main">
-                <div class="market-title"><span>Farm Blast</span></div>
-                <div class="market-meta">Self Studio · 三消</div>
-              </div>
-              <span class="rank-value">74</span>
-              <span class="rank-value">188</span>
-              <span class="rank-value empty">-</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #21c8f6, #637bff)">CC</span>
-              <div class="market-main">
-                <div class="market-title"><span>Color Crush</span></div>
-                <div class="market-meta">Self Studio · 休闲</div>
-              </div>
-              <span class="rank-value good">21</span>
-              <span class="rank-value">67</span>
-              <span class="rank-value">228</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #734bff, #d85cff)">PJ</span>
-              <div class="market-main">
-                <div class="market-title"><span>Puzzle Journey</span></div>
-                <div class="market-meta">Self Studio · 益智解谜</div>
-              </div>
-              <span class="rank-value">92</span>
-              <span class="rank-value empty">-</span>
-              <span class="rank-value empty">-</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #00b894, #55efc4)">GS</span>
-              <div class="market-main">
-                <div class="market-title"><span>Garden Sort</span></div>
-                <div class="market-meta">Self Studio · 休闲</div>
-              </div>
-              <span class="rank-value">37</span>
-              <span class="rank-value">104</span>
-              <span class="rank-value empty">-</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #fdcb6e, #e17055)">CQ</span>
-              <div class="market-main">
-                <div class="market-title"><span>Cube Quest</span></div>
-                <div class="market-meta">Self Studio · 益智解谜</div>
-              </div>
-              <span class="rank-value">56</span>
-              <span class="rank-value">133</span>
-              <span class="rank-value empty">-</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #0984e3, #74b9ff)">MA</span>
-              <div class="market-main">
-                <div class="market-title"><span>Maze Arrows</span></div>
-                <div class="market-meta">Self Studio · 益智解谜</div>
-              </div>
-              <span class="rank-value hot">7</span>
-              <span class="rank-value good">31</span>
-              <span class="rank-value">118</span>
-            </div>
+            <div class="market-state">正在加载自有产品排名 · App Store...</div>
           </div>
         </article>
 
@@ -1902,116 +1615,7 @@
               <span>US游戏榜</span>
               <span>US分类榜</span>
             </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #ff9100, #00b25a)">BC</span>
-              <div class="market-main">
-                <div class="market-title"><span>Block Crush</span></div>
-                <div class="market-meta">Grand Games · Puzzle</div>
-              </div>
-              <span class="rank-value hot">9</span>
-              <span class="rank-value good">28</span>
-              <span class="rank-value">155</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #7b61ff, #31c6ff)">TS</span>
-              <div class="market-main">
-                <div class="market-title"><span>Tile Sort Journey</span></div>
-                <div class="market-meta">Self Studio · Casual</div>
-              </div>
-              <span class="rank-value">18</span>
-              <span class="rank-value good">44</span>
-              <span class="rank-value">260</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #ff5f7e, #ffc15a)">MC</span>
-              <div class="market-main">
-                <div class="market-title"><span>Merge Cafe</span></div>
-                <div class="market-meta">Self Studio · Simulation</div>
-              </div>
-              <span class="rank-value">55</span>
-              <span class="rank-value">149</span>
-              <span class="rank-value empty">-</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #19c37d, #087843)">WF</span>
-              <div class="market-main">
-                <div class="market-title"><span>Word Forest</span></div>
-                <div class="market-meta">Self Studio · Word</div>
-              </div>
-              <span class="rank-value good">24</span>
-              <span class="rank-value">91</span>
-              <span class="rank-value">332</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #151a2d, #5964ff)">BM</span>
-              <div class="market-main">
-                <div class="market-title"><span>Block Master 3D</span></div>
-                <div class="market-meta">Self Studio · Puzzle</div>
-              </div>
-              <span class="rank-value">40</span>
-              <span class="rank-value">112</span>
-              <span class="rank-value empty">-</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #ff7a00, #ff2d55)">FB</span>
-              <div class="market-main">
-                <div class="market-title"><span>Farm Blast</span></div>
-                <div class="market-meta">Self Studio · Match 3</div>
-              </div>
-              <span class="rank-value">62</span>
-              <span class="rank-value">177</span>
-              <span class="rank-value empty">-</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #21c8f6, #637bff)">CC</span>
-              <div class="market-main">
-                <div class="market-title"><span>Color Crush</span></div>
-                <div class="market-meta">Self Studio · Casual</div>
-              </div>
-              <span class="rank-value">31</span>
-              <span class="rank-value">84</span>
-              <span class="rank-value">295</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #734bff, #d85cff)">PJ</span>
-              <div class="market-main">
-                <div class="market-title"><span>Puzzle Journey</span></div>
-                <div class="market-meta">Self Studio · Puzzle</div>
-              </div>
-              <span class="rank-value">83</span>
-              <span class="rank-value empty">-</span>
-              <span class="rank-value empty">-</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #00b894, #55efc4)">GS</span>
-              <div class="market-main">
-                <div class="market-title"><span>Garden Sort</span></div>
-                <div class="market-meta">Self Studio · Casual</div>
-              </div>
-              <span class="rank-value good">16</span>
-              <span class="rank-value">58</span>
-              <span class="rank-value">210</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #fdcb6e, #e17055)">CQ</span>
-              <div class="market-main">
-                <div class="market-title"><span>Cube Quest</span></div>
-                <div class="market-meta">Self Studio · Puzzle</div>
-              </div>
-              <span class="rank-value">48</span>
-              <span class="rank-value">127</span>
-              <span class="rank-value empty">-</span>
-            </div>
-            <div class="owned-row">
-              <span class="app-icon" style="background: linear-gradient(135deg, #0984e3, #74b9ff)">MA</span>
-              <div class="market-main">
-                <div class="market-title"><span>Maze Arrows</span></div>
-                <div class="market-meta">Self Studio · Puzzle</div>
-              </div>
-              <span class="rank-value hot">5</span>
-              <span class="rank-value good">19</span>
-              <span class="rank-value">96</span>
-            </div>
+            <div class="market-state">正在加载自有产品排名 · Google Play...</div>
           </div>
         </article>
       </div>
@@ -2179,6 +1783,7 @@
 
     activateWithinGroup(".tab");
 
+    const globalRefresh = document.querySelector(".global-refresh");
     const rankDatePicker = document.querySelector(".rank-date-picker");
     const rankDateControl = document.querySelector(".rank-date-control");
     const rankDateValue = document.querySelector(".rank-date-value");
@@ -2813,6 +2418,21 @@
       renderOwnedRankPanels();
     }
 
+    async function refreshDashboardData() {
+      globalRefresh.classList.add("is-loading");
+      try {
+        await loadAvailableRankDates();
+        renderRankCalendar();
+        renderAllRankPanels(document.querySelector(".tab.active")?.dataset.rankType || "US游戏榜");
+        drawTrendChart();
+        renderGooglePlayEvents();
+      } finally {
+        window.setTimeout(() => {
+          globalRefresh.classList.remove("is-loading");
+        }, 300);
+      }
+    }
+
     async function initializeDashboard() {
       await loadAvailableRankDates();
       const today = getTodayDateValue();
@@ -2826,6 +2446,8 @@
     }
 
     initializeDashboard();
+
+    globalRefresh.addEventListener("click", refreshDashboardData);
 
     document.querySelectorAll(".range-group .filter[data-range]").forEach((button) => {
       button.addEventListener("click", () => {
