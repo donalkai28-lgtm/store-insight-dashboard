@@ -172,6 +172,10 @@ function getBestCategoryRank(row) {
 
 function sortOwnedRows(rows) {
   return rows.sort((a, b) => {
+    if (a.is_unlisted !== b.is_unlisted) {
+      return a.is_unlisted ? 1 : -1;
+    }
+
     const aGameRank = a.ranks.us_games;
     const bGameRank = b.ranks.us_games;
 
