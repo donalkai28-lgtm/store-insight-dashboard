@@ -2504,7 +2504,12 @@
       return trendProducts.find((product) => product.name === productSearch.value) || trendProducts[0];
     };
 
-    const formatTrendDate = (dateText) => {
+    const formatTrendAxisDate = (dateText) => {
+      const [, month, day] = dateText.split("-");
+      return `${Number(month)}/${Number(day)}`;
+    };
+
+    const formatTrendTooltipDate = (dateText) => {
       const [, month, day] = dateText.split("-");
       const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
       const weekday = weekdays[new Date(`${dateText}T00:00:00.000Z`).getUTCDay()];
@@ -2563,7 +2568,7 @@
     const drawTrendChart = async () => {
       const width = Math.max(900, Math.round(trendChart.clientWidth || trendChart.parentElement.clientWidth || 1080));
       const height = 280;
-      const padding = { top: 22, right: 18, bottom: 34, left: 38 };
+      const padding = { top: 22, right: 46, bottom: 34, left: 44 };
       const plotWidth = width - padding.left - padding.right;
       const plotHeight = height - padding.top - padding.bottom;
       const product = getSelectedTrendProduct();
@@ -2571,7 +2576,7 @@
       const source = getSelectedTrendSource();
       const color = source === "ios" ? "#ff6f87" : "#be36e8";
 
-      setTrendState("正在加载 23:50 天级趋势...");
+      setTrendState("正在加载天级趋势...");
 
       let apiSeries = [];
       try {
@@ -2600,12 +2605,13 @@
         .filter((item) => item.rows.length > 0);
 
       if (visibleSeries.length === 0) {
-        setTrendState("当前产品暂无 23:50 趋势数据");
+        setTrendState("当前产品暂无趋势数据");
         return;
       }
 
       const rawDates = Array.from(new Set(visibleSeries.flatMap((item) => item.rows.map((row) => row.date)))).sort();
-      const trendDates = rawDates.map(formatTrendDate);
+      const axisDates = rawDates.map(formatTrendAxisDate);
+      const tooltipDates = rawDates.map(formatTrendTooltipDate);
       const allRanks = visibleSeries.flatMap((item) => item.rows.map((row) => row.rank));
       const maxRank = Math.max(60, Math.ceil(Math.max(...allRanks) / 10) * 10);
 
@@ -2613,10 +2619,10 @@
       trendChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
       const xForIndex = (index) => {
-        if (trendDates.length === 1) {
+        if (axisDates.length === 1) {
           return padding.left + plotWidth / 2;
         }
-        return padding.left + (index / (trendDates.length - 1)) * plotWidth;
+        return padding.left + (index / (axisDates.length - 1)) * plotWidth;
       };
       const yForRank = (rank) => padding.top + ((rank - 1) / (maxRank - 1)) * plotHeight;
       const getSeriesClassName = (item) => {
@@ -2636,7 +2642,7 @@
         const day = new Date(`${date}T00:00:00.000Z`).getUTCDay();
         if (![0, 6].includes(day)) return;
 
-        const bandWidth = trendDates.length === 1 ? plotWidth : plotWidth / Math.max(1, trendDates.length - 1);
+        const bandWidth = axisDates.length === 1 ? plotWidth : plotWidth / Math.max(1, axisDates.length - 1);
         trendChart.appendChild(svgEl("rect", {
           class: "weekend-band",
           x: xForIndex(index) - bandWidth / 2,
@@ -2654,12 +2660,12 @@
         trendChart.appendChild(text);
       });
 
-      const labelStep = Math.max(1, Math.ceil(trendDates.length / 8));
-      trendDates.forEach((date, index) => {
-        if (index % labelStep !== 0 && index !== trendDates.length - 1) return;
+      const labelStep = Math.max(1, Math.ceil(axisDates.length / 8));
+      axisDates.forEach((date, index) => {
+        if (index % labelStep !== 0 && index !== axisDates.length - 1) return;
         const x = xForIndex(index);
         trendChart.appendChild(svgEl("line", { class: "grid-line", x1: x, y1: padding.top, x2: x, y2: padding.top + plotHeight }));
-        const text = svgEl("text", { class: "axis-label", x: x - 18, y: height - 10 });
+        const text = svgEl("text", { class: "axis-label", x, y: height - 10, "text-anchor": "middle" });
         text.textContent = date;
         trendChart.appendChild(text);
       });
@@ -2670,7 +2676,14 @@
           .map((date, index) => {
             const row = rowByDate.get(date);
             if (!row) return null;
-            return { x: xForIndex(index), y: yForRank(row.rank), rank: row.rank, date: trendDates[index], label: item.label };
+            return {
+              x: xForIndex(index),
+              y: yForRank(row.rank),
+              rank: row.rank,
+              date,
+              displayDate: tooltipDates[index],
+              label: item.label
+            };
           })
           .filter(Boolean);
 
@@ -2732,9 +2745,12 @@
       trendChart.onmousemove = (event) => {
         const rect = trendChart.getBoundingClientRect();
         const localX = (event.clientX - rect.left) / rect.width * width;
-        const roughIndex = trendDates.length === 1 ? 0 : Math.round((localX - padding.left) / plotWidth * (trendDates.length - 1));
-        const index = Math.max(0, Math.min(trendDates.length - 1, roughIndex));
-        const point = points[index];
+        const roughIndex = axisDates.length === 1 ? 0 : Math.round((localX - padding.left) / plotWidth * (axisDates.length - 1));
+        const index = Math.max(0, Math.min(axisDates.length - 1, roughIndex));
+        const targetDate = rawDates[index];
+        const point = points.find((item) => item.date === targetDate) || points.reduce((nearest, item) => {
+          return Math.abs(item.x - xForIndex(index)) < Math.abs(nearest.x - xForIndex(index)) ? item : nearest;
+        }, points[0]);
 
         hoverLine.setAttribute("x1", point.x);
         hoverLine.setAttribute("x2", point.x);
@@ -2750,7 +2766,7 @@
           })
           .join("");
 
-        trendTooltip.innerHTML = `<strong>${point.date}</strong><span>${productName}</span>${tooltipRows}`;
+        trendTooltip.innerHTML = `<strong>${point.displayDate}</strong><span>${productName}</span>${tooltipRows}`;
         trendTooltip.style.left = `${event.clientX - rect.left}px`;
         trendTooltip.style.top = `${event.clientY - rect.top}px`;
         trendTooltip.classList.add("is-visible");

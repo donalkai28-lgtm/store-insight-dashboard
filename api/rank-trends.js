@@ -83,6 +83,46 @@ async function supabaseGet(pathname) {
   return response.json();
 }
 
+async function getTrendRows(platformConfig, item, appId, startDate, endDate) {
+  const finalParams = new URLSearchParams({
+    select: "beijing_date,rank,snapshot_at,is_final_snapshot",
+    country: "eq.us",
+    chart_type: `eq.${item.chartType}`,
+    app_id: `eq.${appId}`,
+    beijing_date: `gte.${startDate}`,
+    is_final_snapshot: "eq.true",
+    order: "beijing_date.asc"
+  });
+  finalParams.append("beijing_date", `lte.${endDate}`);
+
+  const finalRows = await supabaseGet(`${platformConfig.table}?${finalParams.toString()}`);
+
+  const latestCurrentParams = new URLSearchParams({
+    select: "beijing_date,rank,snapshot_at,is_final_snapshot",
+    country: "eq.us",
+    chart_type: `eq.${item.chartType}`,
+    app_id: `eq.${appId}`,
+    beijing_date: `eq.${endDate}`,
+    order: "snapshot_at.desc",
+    limit: "1"
+  });
+  const latestCurrentRows = await supabaseGet(`${platformConfig.table}?${latestCurrentParams.toString()}`);
+
+  const rowByDate = new Map(finalRows.map((row) => [row.beijing_date, row]));
+  if (latestCurrentRows[0]) {
+    rowByDate.set(latestCurrentRows[0].beijing_date, latestCurrentRows[0]);
+  }
+
+  return [...rowByDate.values()]
+    .sort((a, b) => a.beijing_date.localeCompare(b.beijing_date))
+    .map((row) => ({
+      date: row.beijing_date,
+      rank: row.rank,
+      snapshot_at: row.snapshot_at,
+      is_final_snapshot: row.is_final_snapshot
+    }));
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
@@ -128,27 +168,12 @@ module.exports = async function handler(req, res) {
     ];
 
     const series = await Promise.all(seriesConfig.map(async (item) => {
-      const params = new URLSearchParams({
-        select: "beijing_date,rank,snapshot_at",
-        country: "eq.us",
-        chart_type: `eq.${item.chartType}`,
-        app_id: `eq.${appId}`,
-        beijing_date: `gte.${startDate}`,
-        is_final_snapshot: "eq.true",
-        order: "beijing_date.asc"
-      });
-      params.append("beijing_date", `lte.${endDate}`);
-
-      const rows = await supabaseGet(`${platformConfig.table}?${params.toString()}`);
+      const rows = await getTrendRows(platformConfig, item, appId, startDate, endDate);
       return {
         key: item.key,
         label: item.label,
         chart_type: item.chartType,
-        rows: rows.map((row) => ({
-          date: row.beijing_date,
-          rank: row.rank,
-          snapshot_at: row.snapshot_at
-        }))
+        rows
       };
     }));
 
