@@ -47,16 +47,13 @@
       width: 100%;
       margin: 0 auto;
       min-height: 100vh;
-      padding: 16px clamp(28px, 3vw, 56px) 44px;
+      padding: 10px clamp(28px, 3vw, 56px) 44px;
     }
 
     .global-refresh {
-      position: fixed;
-      top: 18px;
-      right: 22px;
-      z-index: 30;
-      width: 36px;
-      height: 36px;
+      flex: 0 0 auto;
+      width: 33px;
+      height: 33px;
       border: 1px solid rgba(23, 32, 51, 0.08);
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.56);
@@ -85,16 +82,6 @@
       }
     }
 
-    .hero {
-      margin-bottom: 10px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 34px;
-      letter-spacing: 0.02em;
-    }
-
     .toolbar,
     .timebar {
       display: flex;
@@ -120,10 +107,18 @@
     }
 
     .toolbar-note {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
       color: var(--muted);
       font-size: 13px;
       font-weight: 700;
       text-align: right;
+    }
+
+    .toolbar-note-text {
+      display: block;
     }
 
     .update-time {
@@ -315,6 +310,12 @@
       color: #171018;
       font-weight: 700;
       box-shadow: 0 12px 32px rgba(255, 126, 158, 0.24);
+    }
+
+    .toolbar .tab {
+      height: 38px;
+      padding-top: 0;
+      padding-bottom: 0;
     }
 
     .select {
@@ -561,9 +562,28 @@
     }
 
     .app-icon.unlisted-icon {
+      position: relative;
+      overflow: hidden;
       color: #64748b;
       background: linear-gradient(135deg, #e5e7eb, #cbd5e1) !important;
       border: 1px solid #cbd5e1;
+    }
+
+    .app-icon.unlisted-icon::after,
+    .unlisted-icon-wrap::after {
+      content: "未上架";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(55, 65, 81, 0.92);
+      color: #fff;
+      font-size: 8px;
+      font-weight: 400;
+      line-height: 1;
     }
 
     .market-main {
@@ -624,6 +644,14 @@
       filter: grayscale(1);
       opacity: 0.58;
       background: #e5e7eb;
+    }
+
+    .unlisted-icon-wrap {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      overflow: hidden;
+      border-radius: 8px;
     }
 
     .market-state {
@@ -1513,7 +1541,6 @@
         padding: 20px;
       }
 
-      .hero,
       .toolbar,
       .timebar,
       .product-section {
@@ -1535,13 +1562,6 @@
 </head>
 <body>
   <main class="app">
-    <button class="global-refresh" type="button" aria-label="刷新全部数据" title="刷新全部数据">↻</button>
-    <section class="hero">
-      <div>
-        <h1>商店速览</h1>
-      </div>
-    </section>
-
     <section class="toolbar" aria-label="榜单切换">
       <div class="toolbar-left">
         <div class="tab-group">
@@ -1575,14 +1595,17 @@
         </div>
       </div>
       <div class="toolbar-note">
-        双端商店榜单和自有产品榜单 均为美国榜单数据<br>
-        数据更新节点：
-        <span class="update-time" data-update-hour="5">05:10</span>、
-        <span class="update-time" data-update-hour="9">09:10</span>、
-        <span class="update-time" data-update-hour="13">13:10</span>、
-        <span class="update-time" data-update-hour="17">17:10</span>、
-        <span class="update-time" data-update-hour="21">21:10</span>、
-        <span class="update-time" data-update-hour="23">23:50</span>
+        <span class="toolbar-note-text">
+          双端商店榜单和自有产品榜单 均为美国榜单数据<br>
+          数据更新节点：
+          <span class="update-time" data-update-hour="5">05:10</span>、
+          <span class="update-time" data-update-hour="9">09:10</span>、
+          <span class="update-time" data-update-hour="13">13:10</span>、
+          <span class="update-time" data-update-hour="17">17:10</span>、
+          <span class="update-time" data-update-hour="21">21:10</span>、
+          <span class="update-time" data-update-hour="23">23:50</span>
+        </span>
+        <button class="global-refresh" type="button" aria-label="刷新全部数据" title="刷新全部数据">↻</button>
       </div>
     </section>
 
@@ -2218,12 +2241,14 @@
         row.className = "owned-row";
 
         let icon;
+        let iconNode;
         if (product.icon_url) {
           icon = document.createElement("img");
           icon.className = "market-icon-img";
           icon.src = product.icon_url;
           icon.alt = `${product.name} icon`;
           icon.loading = "lazy";
+          iconNode = icon;
         } else {
           icon = document.createElement("span");
           icon.className = "app-icon";
@@ -2231,10 +2256,16 @@
             icon.style.background = "linear-gradient(135deg, #7b61ff, #31c6ff)";
           }
           icon.textContent = getProductInitials(product.name);
+          iconNode = icon;
         }
 
         if (product.is_unlisted) {
           icon.classList.add("unlisted-icon");
+          if (product.icon_url) {
+            iconNode = document.createElement("span");
+            iconNode.className = "unlisted-icon-wrap";
+            iconNode.appendChild(icon);
+          }
         }
 
         const main = document.createElement("div");
@@ -2249,7 +2280,7 @@
           titleText.target = "_blank";
           titleText.rel = "noopener noreferrer";
         }
-        titleText.textContent = product.is_unlisted ? `${product.name}（未上架）` : product.name;
+        titleText.textContent = product.name;
         title.appendChild(titleText);
 
         const meta = document.createElement("div");
@@ -2260,14 +2291,14 @@
 
         if (platform === "app_store") {
           row.append(
-            icon,
+            iconNode,
             main,
             createOwnedRank(product.ranks?.us_games),
             createOwnedRank(product.ranks?.us_category_1),
             createOwnedRank(product.ranks?.us_category_2)
           );
         } else {
-          row.append(icon, main, createOwnedRank(product.ranks?.us_games), createOwnedRank(product.ranks?.us_category));
+          row.append(iconNode, main, createOwnedRank(product.ranks?.us_games), createOwnedRank(product.ranks?.us_category));
         }
         list.appendChild(row);
       });
