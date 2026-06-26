@@ -237,7 +237,7 @@ async function fetchOwnedProductProfiles(snapshot) {
       product_key: product?.key || appId,
       app_id: appId,
       app_name: app.trackName || product?.name || "Unknown App",
-      developer_name: app.sellerName || app.artistName || "",
+      developer_name: app.artistName || app.sellerName || "",
       icon_url: app.artworkUrl100 || app.artworkUrl512 || "",
       store_url: app.trackViewUrl || "",
       snapshot_at: snapshot.snapshotAt,
