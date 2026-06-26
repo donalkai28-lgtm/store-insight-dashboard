@@ -2878,8 +2878,19 @@
           .join("");
 
         trendTooltip.innerHTML = `<strong>${point.displayDate}</strong><span>${productName}</span>${tooltipRows}`;
-        trendTooltip.style.left = `${event.clientX - rect.left}px`;
-        trendTooltip.style.top = `${event.clientY - rect.top}px`;
+
+        const tipW = trendTooltip.offsetWidth || 138;
+        const tipH = trendTooltip.offsetHeight || 80;
+        const localX = event.clientX - rect.left;
+        const localY = event.clientY - rect.top;
+        const gap = 12;
+        const clampedX = Math.max(tipW / 2, Math.min(rect.width - tipW / 2, localX));
+        const flipBelow = localY - tipH - gap < 0;
+        trendTooltip.style.transform = flipBelow
+          ? `translate(-50%, ${gap}px)`
+          : `translate(-50%, calc(-100% - ${gap}px))`;
+        trendTooltip.style.left = `${clampedX}px`;
+        trendTooltip.style.top = `${localY}px`;
         trendTooltip.classList.add("is-visible");
       };
 
