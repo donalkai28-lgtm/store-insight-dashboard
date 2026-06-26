@@ -760,6 +760,10 @@
       color: #0c1424;
     }
 
+    .owned-row .market-main {
+      padding-left: 4px;
+    }
+
     .rank-value {
       display: inline-flex;
       align-items: center;
@@ -1637,13 +1641,6 @@
             <span class="rank-date">2026-06-16</span>
           </div>
           <div class="market-list owned-list app-store-owned" id="appStoreOwnedList">
-            <div class="owned-head">
-              <span></span>
-              <span>产品</span>
-              <span>US游戏榜</span>
-              <span>US分类榜1</span>
-              <span>US分类榜2</span>
-            </div>
             <div class="market-state">正在加载自有产品排名 · App Store...</div>
           </div>
         </article>
@@ -1654,12 +1651,6 @@
             <span class="rank-date">2026-06-16</span>
           </div>
           <div class="market-list owned-list google-play-owned" id="googlePlayOwnedList">
-            <div class="owned-head">
-              <span></span>
-              <span>产品</span>
-              <span>US游戏榜</span>
-              <span>US分类榜</span>
-            </div>
             <div class="market-state">正在加载自有产品排名 · Google Play...</div>
           </div>
         </article>
@@ -2024,25 +2015,7 @@
       googlePlayMarketList.innerHTML = `<div class="market-state">${message}</div>`;
     };
 
-    const ownedHeadHtmlByPlatform = {
-      app_store: `
-      <div class="owned-head">
-        <span></span>
-        <span>产品</span>
-        <span>US游戏榜</span>
-        <span>US分类榜1</span>
-        <span>US分类榜2</span>
-      </div>
-    `,
-      google_play: `
-      <div class="owned-head">
-        <span></span>
-        <span>产品</span>
-        <span>US游戏榜</span>
-        <span>US分类榜</span>
-      </div>
-    `
-    };
+    const ownedHeadHtmlByPlatform = { app_store: "", google_play: "" };
 
     const setOwnedState = (list, message, platform = "app_store") => {
       list.innerHTML = `${ownedHeadHtmlByPlatform[platform]}<div class="market-state">${message}</div>`;
@@ -2234,7 +2207,7 @@
     };
 
     const renderOwnedRows = (list, products, platform, platformName) => {
-      list.innerHTML = ownedHeadHtmlByPlatform[platform];
+      list.innerHTML = "";
 
       products.forEach((product) => {
         const row = document.createElement("div");
