@@ -2818,7 +2818,7 @@
       dataPoints.forEach((p, i) => {
         if (i % dotStep !== 0 && i !== dataPoints.length - 1) return;
         marketHistorySvg.appendChild(mkSvg("circle", {
-          class: "chart-point", cx: p.x, cy: p.y, r: 4, style: "stroke: #ff6f87"
+          class: "chart-point", cx: p.x, cy: p.y, r: 2.8, style: "stroke: #ff6f87"
         }));
       });
 
@@ -2835,7 +2835,7 @@
       }
 
       const hoverLine = mkSvg("line", { class: "hover-line", x1: points[0].x, y1: padding.top, x2: points[0].x, y2: plotBottom, opacity: 0 });
-      const hoverDot = mkSvg("circle", { class: "hover-dot", cx: points[0].x, cy: points[0].y, r: 5, style: "stroke: #ff6f87", opacity: 0 });
+      const hoverDot = mkSvg("circle", { class: "hover-dot", cx: points[0].x, cy: points[0].y, r: 3.5, style: "stroke: #ff6f87", opacity: 0 });
       marketHistorySvg.appendChild(hoverLine);
       marketHistorySvg.appendChild(hoverDot);
 
