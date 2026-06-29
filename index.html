@@ -1536,6 +1536,172 @@
       font-weight: 700;
     }
 
+    .market-row {
+      position: relative;
+    }
+
+    .market-history-btn {
+      position: absolute;
+      right: 58px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      opacity: 0;
+      padding: 0;
+      transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+
+    .market-row:hover .market-history-btn {
+      opacity: 1;
+    }
+
+    .market-history-btn:hover {
+      background: rgba(29, 114, 255, 0.1);
+      color: #1d72ff;
+    }
+
+    .market-history-btn svg {
+      width: 13px;
+      height: 11px;
+    }
+
+    .market-history-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .market-history-modal[hidden] {
+      display: none;
+    }
+
+    .market-history-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.38);
+      backdrop-filter: blur(2px);
+    }
+
+    .market-history-panel {
+      position: relative;
+      z-index: 1;
+      width: 680px;
+      padding: 22px 24px 24px;
+      border-radius: 22px;
+      background: #fff;
+      box-shadow: 0 28px 64px rgba(15, 23, 42, 0.22);
+    }
+
+    .market-history-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .market-history-app-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .market-history-app-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      object-fit: cover;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+    }
+
+    .market-history-app-name {
+      font-size: 16px;
+      font-weight: 900;
+      color: #172033;
+    }
+
+    .market-history-platform-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #6c7584;
+      margin-top: 2px;
+    }
+
+    .market-history-close {
+      width: 30px;
+      height: 30px;
+      border: 0;
+      border-radius: 8px;
+      background: #f1f5fb;
+      color: #475569;
+      cursor: pointer;
+      font-size: 15px;
+      display: grid;
+      place-items: center;
+    }
+
+    .market-history-close:hover {
+      background: #e2e8f0;
+    }
+
+    .market-history-chart-wrap {
+      position: relative;
+      height: 240px;
+      border-radius: 14px;
+      background: #fff;
+      border: 1px solid #e8edf3;
+      overflow: hidden;
+    }
+
+    .market-history-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .market-history-tip {
+      position: absolute;
+      min-width: 120px;
+      padding: 8px 10px;
+      border: 1px solid rgba(24, 35, 52, 0.1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.97);
+      box-shadow: 0 12px 28px rgba(91, 99, 113, 0.16);
+      color: #172033;
+      font-size: 12px;
+      line-height: 1.55;
+      pointer-events: none;
+      transform: translate(-50%, calc(-100% - 10px));
+      opacity: 0;
+      transition: opacity 0.12s ease;
+      z-index: 3;
+    }
+
+    .market-history-tip.is-visible {
+      opacity: 1;
+    }
+
+    .market-history-tip strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+
+    .market-history-tip span {
+      display: block;
+      color: #627086;
+    }
+
     @media (max-width: 900px) {
       body {
         min-width: 0;
@@ -1803,6 +1969,26 @@
       </section>
     </section>
   </main>
+
+  <div class="market-history-modal" id="marketHistoryModal" hidden>
+    <div class="market-history-overlay" id="marketHistoryOverlay"></div>
+    <div class="market-history-panel">
+      <div class="market-history-head">
+        <div class="market-history-app-info">
+          <img class="market-history-app-icon" id="marketHistoryAppIcon" src="" alt="" />
+          <div>
+            <div class="market-history-app-name" id="marketHistoryAppName"></div>
+            <div class="market-history-platform-label" id="marketHistoryPlatformLabel"></div>
+          </div>
+        </div>
+        <button class="market-history-close" id="marketHistoryClose" type="button">✕</button>
+      </div>
+      <div class="market-history-chart-wrap">
+        <svg class="market-history-svg" id="marketHistorySvg" role="img"></svg>
+        <div class="market-history-tip" id="marketHistoryTip"></div>
+      </div>
+    </div>
+  </div>
 
   <script>
     const activateWithinGroup = (selector) => {
@@ -2141,10 +2327,11 @@
         : ownedGooglePlayPackages.has(String(app.appId));
     };
 
-    const renderMarketRows = (list, apps, platform) => {
+    const renderMarketRows = (list, apps, platform, rankType) => {
       list.innerHTML = "";
+      const showHistory = rankType === "US游戏榜";
 
-      apps.slice(0, 100).forEach((app) => {
+      apps.slice(0, 100).forEach((app, appIndex) => {
         const isOwnedApp = isOwnedMarketApp(app, platform);
         const row = document.createElement("div");
         row.className = "market-row";
@@ -2202,7 +2389,20 @@
           change.textContent = changeView.text;
         }
 
-        row.append(rank, icon, main, change);
+        if (showHistory && appIndex < 30 && app.appId) {
+          const histBtn = document.createElement("button");
+          histBtn.type = "button";
+          histBtn.className = "market-history-btn";
+          histBtn.title = "近30天游戏榜趋势";
+          histBtn.innerHTML = `<svg viewBox="0 0 14 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1,11 4,6 7,8 10,3 13,1"/></svg>`;
+          histBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openMarketHistory(app, platform);
+          });
+          row.append(rank, icon, main, histBtn, change);
+        } else {
+          row.append(rank, icon, main, change);
+        }
         list.appendChild(row);
       });
     };
@@ -2383,7 +2583,7 @@
         }
 
         setActiveUpdateTime(data.snapshot_at);
-        renderMarketRows(appStoreMarketList, rows.map(parseAppStoreSnapshotRow), "app_store");
+        renderMarketRows(appStoreMarketList, rows.map(parseAppStoreSnapshotRow), "app_store", rankType);
       } catch (error) {
         setAppStoreState("App Store 榜单加载失败，请稍后重试");
       }
@@ -2416,7 +2616,7 @@
         }
 
         setActiveUpdateTime(data.snapshot_at);
-        renderMarketRows(googlePlayMarketList, rows.map(parseGooglePlaySnapshotRow), "google_play");
+        renderMarketRows(googlePlayMarketList, rows.map(parseGooglePlaySnapshotRow), "google_play", rankType);
       } catch (error) {
         setGooglePlayState("Google Play 榜单加载失败，请稍后重试");
       }
@@ -2479,6 +2679,222 @@
         setEventState("Google Play 活动加载失败，请稍后重试");
       }
     }
+
+    const marketHistoryModal = document.querySelector("#marketHistoryModal");
+    const marketHistoryOverlay = document.querySelector("#marketHistoryOverlay");
+    const marketHistoryClose = document.querySelector("#marketHistoryClose");
+    const marketHistoryAppIcon = document.querySelector("#marketHistoryAppIcon");
+    const marketHistoryAppName = document.querySelector("#marketHistoryAppName");
+    const marketHistoryPlatformLabel = document.querySelector("#marketHistoryPlatformLabel");
+    const marketHistorySvg = document.querySelector("#marketHistorySvg");
+    const marketHistoryTip = document.querySelector("#marketHistoryTip");
+
+    const closeMarketHistory = () => {
+      marketHistoryModal.hidden = true;
+      marketHistorySvg.onmousemove = null;
+      marketHistorySvg.onmouseleave = null;
+    };
+
+    marketHistoryClose.addEventListener("click", closeMarketHistory);
+    marketHistoryOverlay.addEventListener("click", closeMarketHistory);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !marketHistoryModal.hidden) closeMarketHistory();
+    });
+
+    const setHistoryChartState = (message) => {
+      const w = Math.max(500, Math.round(marketHistorySvg.clientWidth || 632));
+      const h = 240;
+      marketHistorySvg.innerHTML = "";
+      marketHistorySvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute("x", w / 2);
+      text.setAttribute("y", h / 2);
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("dominant-baseline", "middle");
+      text.setAttribute("fill", "#8a94a4");
+      text.setAttribute("font-size", "13");
+      text.textContent = message;
+      marketHistorySvg.appendChild(text);
+    };
+
+    const drawMarketHistoryChart = (rows) => {
+      const wrap = marketHistorySvg.parentElement;
+      const width = Math.max(500, Math.round(wrap.clientWidth || 632));
+      const height = 240;
+      const padding = { top: 22, right: 40, bottom: 34, left: 42 };
+      const plotWidth = width - padding.left - padding.right;
+      const plotHeight = height - padding.top - padding.bottom;
+      const plotBottom = padding.top + plotHeight;
+
+      const today = new Date();
+      const dates = Array.from({ length: 30 }, (_, i) => {
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (29 - i));
+        return toDateValue(d);
+      });
+
+      const rowByDate = new Map(rows.map((r) => [r.date, r.rank]));
+      const dataRanks = rows.map((r) => r.rank);
+
+      if (dataRanks.length === 0) {
+        setHistoryChartState("近30天无游戏榜排名数据");
+        return;
+      }
+
+      const dataMin = Math.min(...dataRanks);
+      const dataMax = Math.max(...dataRanks);
+      const span = Math.max(2, dataMax - dataMin);
+      const buf = Math.ceil(span * 0.3);
+      const yMin = Math.max(1, dataMin - buf);
+      const yMax = dataMax + buf;
+
+      const xFor = (i) => padding.left + (i / (dates.length - 1)) * plotWidth;
+      const yFor = (rank) => padding.top + ((rank - yMin) / (yMax - yMin)) * plotHeight;
+
+      const mkSvg = (name, attrs = {}) => {
+        const n = document.createElementNS("http://www.w3.org/2000/svg", name);
+        Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v));
+        return n;
+      };
+
+      marketHistorySvg.innerHTML = "";
+      marketHistorySvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+      dates.forEach((date, i) => {
+        const day = new Date(`${date}T00:00:00.000Z`).getUTCDay();
+        if (![0, 6].includes(day)) return;
+        const bw = plotWidth / Math.max(1, dates.length - 1);
+        marketHistorySvg.appendChild(mkSvg("rect", {
+          class: "weekend-band",
+          x: xFor(i) - bw / 2, y: padding.top,
+          width: bw, height: plotHeight
+        }));
+      });
+
+      const tickStep = Math.max(1, Math.round((yMax - yMin) / 5));
+      const firstTick = Math.ceil(yMin / tickStep) * tickStep;
+      for (let rank = firstTick; rank <= yMax; rank += tickStep) {
+        const y = yFor(rank);
+        marketHistorySvg.appendChild(mkSvg("line", { class: "grid-line", x1: padding.left, y1: y, x2: width - padding.right, y2: y }));
+        const t = mkSvg("text", { class: "axis-label", x: 10, y: y + 4 });
+        t.textContent = rank;
+        marketHistorySvg.appendChild(t);
+      }
+
+      const labelStep = Math.max(1, Math.ceil(dates.length / 6));
+      dates.forEach((date, i) => {
+        if (i % labelStep !== 0 && i !== dates.length - 1) return;
+        const x = xFor(i);
+        marketHistorySvg.appendChild(mkSvg("line", { class: "grid-line", x1: x, y1: padding.top, x2: x, y2: plotBottom }));
+        const t = mkSvg("text", { class: "axis-label", x, y: height - 10, "text-anchor": "middle" });
+        t.textContent = formatTrendAxisDate(date);
+        marketHistorySvg.appendChild(t);
+      });
+
+      const points = dates.map((date, i) => {
+        const rank = rowByDate.get(date);
+        return {
+          x: xFor(i),
+          y: rank != null ? yFor(rank) : plotBottom,
+          rank: rank ?? null,
+          hasData: rank != null,
+          date,
+          displayDate: formatTrendTooltipDate(date)
+        };
+      });
+
+      const pathD = points.reduce((path, p, i) => {
+        if (i === 0) return `M ${p.x} ${p.y}`;
+        const prev = points[i - 1];
+        const midX = (prev.x + p.x) / 2;
+        return `${path} Q ${prev.x} ${prev.y} ${midX} ${(prev.y + p.y) / 2} T ${p.x} ${p.y}`;
+      }, "");
+
+      marketHistorySvg.appendChild(mkSvg("path", { class: "ios-line", d: pathD }));
+
+      const dataPoints = points.filter((p) => p.hasData);
+      const dotStep = Math.max(1, Math.ceil(dataPoints.length / 10));
+      dataPoints.forEach((p, i) => {
+        if (i % dotStep !== 0 && i !== dataPoints.length - 1) return;
+        marketHistorySvg.appendChild(mkSvg("circle", {
+          class: "chart-point", cx: p.x, cy: p.y, r: 4, style: "stroke: #ff6f87"
+        }));
+      });
+
+      if (dataPoints.length > 0) {
+        const best = dataPoints.reduce((b, p) => p.rank < b.rank ? p : b, dataPoints[0]);
+        const pinY = Math.max(2, best.y - 28);
+        marketHistorySvg.appendChild(mkSvg("path", {
+          class: "chart-pin",
+          d: `M ${best.x} ${pinY} a15 15 0 1 1 0 30 a15 15 0 1 1 0 -30 M ${best.x} ${pinY + 30} L ${best.x - 7} ${pinY + 42} L ${best.x + 7} ${pinY + 42} Z`
+        }));
+        const pinText = mkSvg("text", { class: "chart-pin-text", x: best.x, y: pinY + 15 });
+        pinText.textContent = best.rank;
+        marketHistorySvg.appendChild(pinText);
+      }
+
+      const hoverLine = mkSvg("line", { class: "hover-line", x1: points[0].x, y1: padding.top, x2: points[0].x, y2: plotBottom, opacity: 0 });
+      const hoverDot = mkSvg("circle", { class: "hover-dot", cx: points[0].x, cy: points[0].y, r: 5, style: "stroke: #ff6f87", opacity: 0 });
+      marketHistorySvg.appendChild(hoverLine);
+      marketHistorySvg.appendChild(hoverDot);
+
+      marketHistorySvg.onmousemove = (e) => {
+        const rect = marketHistorySvg.getBoundingClientRect();
+        const lx = (e.clientX - rect.left) / rect.width * width;
+        const idx = Math.max(0, Math.min(points.length - 1, Math.round((lx - padding.left) / plotWidth * (points.length - 1))));
+        const p = points[idx];
+
+        hoverLine.setAttribute("x1", p.x);
+        hoverLine.setAttribute("x2", p.x);
+        hoverLine.setAttribute("opacity", 1);
+        hoverDot.setAttribute("cx", p.x);
+        hoverDot.setAttribute("cy", p.y);
+        hoverDot.setAttribute("opacity", p.hasData ? 1 : 0);
+
+        const rankText = p.hasData ? `US游戏榜：第 ${p.rank} 名` : "US游戏榜：超出100名";
+        marketHistoryTip.innerHTML = `<strong>${p.displayDate}</strong><span>${rankText}</span>`;
+
+        const tipW = marketHistoryTip.offsetWidth || 120;
+        const tipH = marketHistoryTip.offsetHeight || 60;
+        const tipX = e.clientX - rect.left;
+        const tipY = e.clientY - rect.top;
+        const gap = 10;
+        const cx = Math.max(tipW / 2, Math.min(rect.width - tipW / 2, tipX));
+        marketHistoryTip.style.transform = tipY - tipH - gap < 0
+          ? `translate(-50%, ${gap}px)`
+          : `translate(-50%, calc(-100% - ${gap}px))`;
+        marketHistoryTip.style.left = `${cx}px`;
+        marketHistoryTip.style.top = `${tipY}px`;
+        marketHistoryTip.classList.add("is-visible");
+      };
+
+      marketHistorySvg.onmouseleave = () => {
+        hoverLine.setAttribute("opacity", 0);
+        hoverDot.setAttribute("opacity", 0);
+        marketHistoryTip.classList.remove("is-visible");
+      };
+    };
+
+    const openMarketHistory = async (app, platform) => {
+      marketHistoryAppIcon.src = app.icon || "";
+      marketHistoryAppIcon.alt = app.name;
+      marketHistoryAppName.textContent = app.name;
+      marketHistoryPlatformLabel.textContent = platform === "app_store"
+        ? "App Store · US游戏榜 近30天"
+        : "Google Play · US游戏榜 近30天";
+      marketHistoryTip.classList.remove("is-visible");
+      setHistoryChartState("正在加载...");
+      marketHistoryModal.hidden = false;
+
+      try {
+        const params = new URLSearchParams({ app_id: app.appId, platform });
+        const res = await fetch(`/api/market-rank-history?${params.toString()}`);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        drawMarketHistoryChart(data.rows);
+      } catch {
+        setHistoryChartState("加载失败，请稍后重试");
+      }
+    };
 
     function renderStoreMarketCharts(rankType = "US游戏榜") {
       renderAppStoreChart(rankType);
