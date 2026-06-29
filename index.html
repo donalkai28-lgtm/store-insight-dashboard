@@ -852,6 +852,7 @@
       color: var(--text);
       background: #fff;
       outline: none;
+      font-size: 13px;
     }
 
     .product-combobox .product-search {
@@ -2686,7 +2687,13 @@
         return;
       }
 
-      const rawDates = Array.from(new Set(visibleSeries.flatMap((item) => item.rows.map((row) => row.date)))).sort();
+      const RANGE_DAYS_LOCAL = { month: 30, quarter: 90, half: 180, year: 365 };
+      const totalDays = RANGE_DAYS_LOCAL[getSelectedTrendRange()] || 30;
+      const todayObj = new Date();
+      const rawDates = Array.from({ length: totalDays }, (_, i) => {
+        const d = new Date(todayObj.getFullYear(), todayObj.getMonth(), todayObj.getDate() - (totalDays - 1 - i));
+        return toDateValue(d);
+      });
       const axisDates = rawDates.map(formatTrendAxisDate);
       const tooltipDates = rawDates.map(formatTrendTooltipDate);
       const allRanks = visibleSeries.flatMap((item) => item.rows.map((row) => row.rank));
@@ -2754,24 +2761,25 @@
         trendChart.appendChild(text);
       });
 
+      const plotBottom = padding.top + plotHeight;
+
       const renderedSeries = visibleSeries.map((item) => {
         const rowByDate = new Map(item.rows.map((row) => [row.date, row]));
-        const points = rawDates
-          .map((date, index) => {
-            const row = rowByDate.get(date);
-            if (!row) return null;
-            return {
-              x: xForIndex(index),
-              y: yForRank(row.rank),
-              rank: row.rank,
-              date,
-              displayDate: tooltipDates[index],
-              label: item.label
-            };
-          })
-          .filter(Boolean);
+        const points = rawDates.map((date, index) => {
+          const row = rowByDate.get(date);
+          return {
+            x: xForIndex(index),
+            y: row ? yForRank(row.rank) : plotBottom,
+            rank: row ? row.rank : null,
+            hasData: Boolean(row),
+            date,
+            displayDate: tooltipDates[index],
+            label: item.label
+          };
+        });
 
-        if (points.length === 0) {
+        const dataPoints = points.filter((p) => p.hasData);
+        if (dataPoints.length === 0) {
           return { ...item, points };
         }
 
@@ -2780,9 +2788,9 @@
           d: buildSmoothPath(points)
         }));
 
-        const pointStep = Math.max(1, Math.ceil(points.length / 10));
-        points.forEach((point, index) => {
-          if (index % pointStep !== 0 && index !== points.length - 1) return;
+        const pointStep = Math.max(1, Math.ceil(dataPoints.length / 10));
+        dataPoints.forEach((point, index) => {
+          if (index % pointStep !== 0 && index !== dataPoints.length - 1) return;
           trendChart.appendChild(svgEl("circle", {
             class: "chart-point",
             cx: point.x,
@@ -2797,7 +2805,8 @@
 
       const gameSeries = renderedSeries.find((item) => item.key === "games") || renderedSeries[0];
       const points = gameSeries.points;
-      const bestPoint = points.reduce((best, point) => point.rank < best.rank ? point : best, points[0]);
+      const dataPoints = points.filter((p) => p.hasData);
+      const bestPoint = dataPoints.reduce((best, point) => point.rank < best.rank ? point : best, dataPoints[0]);
       const pinY = Math.max(2, bestPoint.y - 28);
       trendChart.appendChild(svgEl("path", {
         class: source === "ios" ? "chart-pin" : "chart-pin gp",
@@ -2831,22 +2840,22 @@
         const localX = (event.clientX - rect.left) / rect.width * width;
         const roughIndex = axisDates.length === 1 ? 0 : Math.round((localX - padding.left) / plotWidth * (axisDates.length - 1));
         const index = Math.max(0, Math.min(axisDates.length - 1, roughIndex));
-        const targetDate = rawDates[index];
-        const point = points.find((item) => item.date === targetDate) || points.reduce((nearest, item) => {
-          return Math.abs(item.x - xForIndex(index)) < Math.abs(nearest.x - xForIndex(index)) ? item : nearest;
-        }, points[0]);
+        const point = points[index] || points[0];
 
         hoverLine.setAttribute("x1", point.x);
         hoverLine.setAttribute("x2", point.x);
         hoverLine.setAttribute("opacity", 1);
         hoverDot.setAttribute("cx", point.x);
         hoverDot.setAttribute("cy", point.y);
-        hoverDot.setAttribute("opacity", 1);
+        hoverDot.setAttribute("opacity", point.hasData ? 1 : 0);
 
         const tooltipRows = renderedSeries
           .map((item) => {
             const matchedPoint = item.points.find((seriesPoint) => seriesPoint.date === point.date);
-            return matchedPoint ? `<span>${item.label}：第 ${matchedPoint.rank} 名</span>` : "";
+            if (!matchedPoint) return "";
+            return matchedPoint.hasData
+              ? `<span>${item.label}：第 ${matchedPoint.rank} 名</span>`
+              : `<span>${item.label}：超出100名</span>`;
           })
           .join("");
 
