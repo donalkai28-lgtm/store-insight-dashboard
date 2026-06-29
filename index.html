@@ -1542,15 +1542,15 @@
 
     .market-history-btn {
       position: absolute;
-      right: 58px;
+      right: 46px;
       top: 50%;
       transform: translateY(-50%);
-      width: 22px;
-      height: 22px;
+      width: 26px;
+      height: 26px;
       display: grid;
       place-items: center;
       border: 0;
-      border-radius: 6px;
+      border-radius: 7px;
       background: transparent;
       color: #94a3b8;
       cursor: pointer;
@@ -1561,16 +1561,18 @@
 
     .market-row:hover .market-history-btn {
       opacity: 1;
-    }
-
-    .market-history-btn:hover {
-      background: rgba(29, 114, 255, 0.1);
+      background: #e8f0fe;
       color: #1d72ff;
     }
 
+    .market-history-btn:hover {
+      background: #d2e3fc;
+      color: #1558d6;
+    }
+
     .market-history-btn svg {
-      width: 13px;
-      height: 11px;
+      width: 15px;
+      height: 13px;
     }
 
     .market-history-modal {
@@ -1596,7 +1598,7 @@
     .market-history-panel {
       position: relative;
       z-index: 1;
-      width: 680px;
+      width: 816px;
       padding: 22px 24px 24px;
       border-radius: 22px;
       background: #fff;
@@ -1656,7 +1658,7 @@
 
     .market-history-chart-wrap {
       position: relative;
-      height: 240px;
+      height: 288px;
       border-radius: 14px;
       background: #fff;
       border: 1px solid #e8edf3;
@@ -2702,8 +2704,8 @@
     });
 
     const setHistoryChartState = (message) => {
-      const w = Math.max(500, Math.round(marketHistorySvg.clientWidth || 632));
-      const h = 240;
+      const w = Math.max(500, Math.round(marketHistorySvg.clientWidth || 768));
+      const h = 288;
       marketHistorySvg.innerHTML = "";
       marketHistorySvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
       const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -2719,8 +2721,8 @@
 
     const drawMarketHistoryChart = (rows) => {
       const wrap = marketHistorySvg.parentElement;
-      const width = Math.max(500, Math.round(wrap.clientWidth || 632));
-      const height = 240;
+      const width = Math.max(500, Math.round(wrap.clientWidth || 768));
+      const height = 288;
       const padding = { top: 22, right: 40, bottom: 34, left: 42 };
       const plotWidth = width - padding.left - padding.right;
       const plotHeight = height - padding.top - padding.bottom;
@@ -2744,8 +2746,8 @@
       const dataMax = Math.max(...dataRanks);
       const span = Math.max(2, dataMax - dataMin);
       const buf = Math.ceil(span * 0.3);
-      const yMin = Math.max(1, dataMin - buf);
-      const yMax = dataMax + buf;
+      const yMin = 1;
+      const yMax = Math.max(20, dataMax + buf);
 
       const xFor = (i) => padding.left + (i / (dates.length - 1)) * plotWidth;
       const yFor = (rank) => padding.top + ((rank - yMin) / (yMax - yMin)) * plotHeight;
